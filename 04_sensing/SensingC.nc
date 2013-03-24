@@ -145,7 +145,10 @@ implementation{
                           temperature compensation
                           humidity = (temperature - 25) * (T1 + T2 * pp_pkt->request_sensor) + RH_linear
                         */
-//*
+/*
+
+// turned off, due to very high measurements and data sheet
+
                         // 8 bit
                         measure = data;
 
