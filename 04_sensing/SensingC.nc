@@ -128,9 +128,8 @@ implementation{
                         //
                         // D2 = 0.01        ->     1 / 100 for 14 bit *
                         // D2 = 0.04        ->     4 / 100 for 12 bit
-                        // temperature                          = D2 * pp_pkt->request_sensor + D1
-                        // convert to centi units  1 / 100
-                        arr_temperature[cnt_measure % NMEASURE] = 1 * data - 3970;
+                        // temperature                          = D2 * data + D1
+                        arr_temperature[cnt_measure % NMEASURE] = 1  * data - 3970;
 		}
 	}
 
@@ -150,31 +149,35 @@ implementation{
                         // 8 bit
                         measure = data;
 
-                        // C1 = -2.0468     ->  -2047 / 1000
-                        // C2 = 0.5872      ->    587 / 1000
-                        // C3 = -0.00040845 ->      0 / 1000
+                        // C1 = -2.0468     ->   -205 / 100
+                        // C2 = 0.5872      ->     59 / 100
+                        // C3 = -0.00040845 ->      0 / 100
                         // humidity = C1     + C2 * measure + C3 * measure^2
-                        humidity    = -2047 + 587 * measure + 0;
+                        humidity      = 59  * measure + 0 - 205;
 
-                        // T1 = 0.01        ->      10 / 1000
-                        // T2 = 0.00128     ->       1 / 1000
-                        // humidity                          = (temperature - 25)    * (T1 + T2 * measure) + humidity
-                        arr_humidity[cnt_measure % NMEASURE] = (10 * temperature - 25000) * (10 + 1  * measure) + humidity;
+                        // T1 = 0.01        ->      1 / 100
+                        // T2 = 0.00128     ->      0 / 100
+                        // humidity                          = (temperature - 25)   * (T1 + T2 * measure) + humidity
+                        arr_humidity[cnt_measure % NMEASURE] = (temperature - 2500) * (1  + 0)            + humidity;
 /*/
                         // 12 bit
                         measure = data;
 
-                        // C1 = -2.0468     ->  -2047 / 1000
-                        // C2 = 0.5872      ->     37 / 1000
-                        // C3 = -0.00008    ->      0 / 1000
-                        // humidity = C1     + C2 * measure + C3 * measure^2
-                        humidity    = -2047  + 37 * measure + 0;
+                        // C1 = -2.0468     ->   -205 / 100
+                        // C2 = 0.5872      ->      4 / 100
+                        // C3 = -0.00008    ->      0 / 100
+                        // humidity = C2 * measure + C3 * measure^2 + C1
+                        humidity    = 4  * measure + 0              - 205;
 
-                        // T1 = 0.01        ->      10 / 1000
-                        // T2 = 0.00008     ->       0 / 1000
-                        // humidity                          = (temperature      - 25)    * (T1 + T2 * measure) + humidity
-                        arr_humidity[cnt_measure % NMEASURE] = (10 * temperature - 25000) * (10 + 0 )           + humidity;
+                        // T1 = 0.01        ->       1 / 100
+                        // T2 = 0.00008     ->       0 / 100
+                        // humidity                          = (temperature - 25)   * (T1 + T2 * measure) + humidity
+                        arr_humidity[cnt_measure % NMEASURE] = (temperature - 2500) * (1  + 0 )           + humidity;
 //*/
+                        if( 100 <= arr_humidity[cnt_measure % NMEASURE] ){
+                                arr_humidity[cnt_measure % NMEASURE] = 100;
+                        }
+
 		}
 	}
 
@@ -223,7 +226,7 @@ implementation{
                                         }
                                         temperature = temperature / NMEASURE;
                                         DB_BEGIN "measured temperature\t%u C ", (temperature/100) DB_END;
-					pp_pkt->request_sensor = 10 * temperature;
+					pp_pkt->request_sensor = temperature;
 
 				}else if( HUMIDITY == pp_pkt->request_sensor){
                                         DB_BEGIN "request for humidity data" DB_END;
@@ -234,7 +237,7 @@ implementation{
                                                 humidity += arr_humidity[idx];
                                         }
                                         humidity = humidity / NMEASURE;
-                                        DB_BEGIN "measured humidity\t%u percent ", (humidity/1000) DB_END;
+                                        DB_BEGIN "measured humidity\t%u percent ", (humidity/100) DB_END;
 					pp_pkt->request_sensor = humidity;
 				}else{
 					// error
@@ -251,13 +254,13 @@ implementation{
 				if( TEMPERATURE == mote2_next_request ){
                                         // temperature / 1000
                                         temperature = pp_pkt->request_sensor;
-                                        DB_BEGIN "temperature\t%u C", (temperature / 1000) DB_END;
+                                        DB_BEGIN "temperature\t\t%u C", (temperature / 100) DB_END;
                                         mote2_next_request = HUMIDITY;
 
 				}else if( HUMIDITY == mote2_next_request ){
                                         // humidity / 1000
                                         humidity = pp_pkt->request_sensor;
-                                        DB_BEGIN "humidity\t%u \%", (humidity/1000) DB_END;
+                                        DB_BEGIN "humidity\t\t%u \%", (humidity/100) DB_END;
                                         mote2_next_request = TEMPERATURE;
 				}
 			}
