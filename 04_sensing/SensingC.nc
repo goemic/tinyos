@@ -132,9 +132,13 @@ implementation{
 	}
 
 	event message_t* Receive.receive( message_t* msg, void* payload, uint8_t len) {
+                // payload
 		SensingMsg_t* pp_pkt = NULL;
-		if( len == sizeof( SensingMsg_t )){
 
+                // intermediate result
+                uint16_t measure = 0;
+
+		if( len == sizeof( SensingMsg_t )){
 			// simply blink
 			call Leds.led2Toggle();
 
@@ -157,9 +161,60 @@ implementation{
 				// get sensor data
 				if( TEMPERATURE == pp_pkt->request_sensor ){
                                         DB_BEGIN "request for temperature data" DB_END;
-					pp_pkt->request_sensor = temperature;
+                                        // convert to centi units
+                                        // D1 = -40.1       -> -4010 / 100 for 5V
+                                        // D1 = -39.8       -> -3980 / 100 for 4V
+                                        // D1 = -39.7       -> -3970 / 100 for 3.5V *
+                                        // D1 = -39.6       -> -3960 / 100 for 3V
+                                        // D1 = -39.4       -> -3940 / 100 for 2.5V
+                                        //
+                                        // D2 = 0.01        ->     1 / 100 for 14 bit *
+                                        // D2 = 0.04        ->     4 / 100 for 12 bit
+                                        // temperature = D2 * pp_pkt->request_sensor + D1
+                                        temperature    = 1 * pp_pkt->request_sensor - 3970;
+
+                                        // convert to milli units  1 / 1000
+					pp_pkt->request_sensor = 10 * temperature;
+
 				}else if( HUMIDITY == pp_pkt->request_sensor){
                                         DB_BEGIN "request for humidity data" DB_END;
+                                        /*
+                                          calculation of humidity (milli)
+
+                                          linear
+                                          humidity = C1 + C2 * pp_pkt->request_sensor + C3 * (pp_pkt->request_sensor)^2
+                                          temperature compensation
+                                          humidity = (temperature - 25) * (T1 + T2 * pp_pkt->request_sensor) + RH_linear
+                                        */
+//*
+                                        // 8 bit
+                                        measure = pp_pkt->request_sensor;
+
+                                        // C1 = -2.0468     ->  -2047 / 1000
+                                        // C2 = 0.5872      ->    587 / 1000
+                                        // C3 = -0.00040845 ->      0 / 1000
+                                        // humidity = C1     + C2 * measure + C3 * measure^2
+                                        humidity    = -2047 + 587 * measure + 0;
+
+                                        // T1 = 0.01        ->      10 / 1000
+                                        // T2 = 0.00128     ->       1 / 1000
+                                        // humidity = (temperature - 25)    * (T1 + T2 * measure) + humidity
+                                        humidity    = (temperature - 25000) * (10 + 1  * measure) + humidity;
+/*/
+                                        // 12 bit
+                                        measure = pp_pkt->request_sensor;
+
+                                        // C1 = -2.0468     ->  -2047 / 1000
+                                        // C2 = 0.5872      ->     37 / 1000
+                                        // C3 = -0.00008    ->      0 / 1000
+                                        // humidity = C1     + C2 * measure + C3 * measure^2
+                                        humidity    = -2047  + 37 * measure + 0;
+
+                                        // T1 = 0.01        ->      10 / 1000
+                                        // T2 = 0.00008     ->       0 / 1000
+                                        // humidity = (temperature - 25)    * (T1 + T2 * measure) + humidity
+                                        humidity    = (temperature - 25000) * (10 + 0 )           + humidity;
+//*/
 					pp_pkt->request_sensor = humidity;
 				}else{
 					// error
@@ -174,15 +229,15 @@ implementation{
 
 				// set sensor data
 				if( TEMPERATURE == mote2_next_request ){
-                                        // (val - 3955) / 100
-// TODO check conversion
-					temperature = ((float) pp_pkt->request_sensor - 3955.0) / 100.0;
-                                        DB_BEGIN "temperature\t%u", (uint16_t) temperature DB_END;
+                                        // temperature / 1000
+                                        temperature = pp_pkt->request_sensor;
+                                        DB_BEGIN "temperature\t%u C", (temperature / 1000) DB_END;
                                         mote2_next_request = HUMIDITY;
+
 				}else if( HUMIDITY == mote2_next_request ){
-// TODO conversion formula
-					humidity = pp_pkt->request_sensor;
-                                        DB_BEGIN "humidity\t%u", (uint16_t) humidity DB_END;
+                                        // humidity / 1000
+                                        humidity = pp_pkt->request_sensor;
+                                        DB_BEGIN "humidity\t%u \%", (humidity/1000) DB_END;
                                         mote2_next_request = TEMPERATURE;
 				}
 			}
@@ -196,4 +251,3 @@ implementation{
 	}
 
 }
-
