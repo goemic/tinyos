@@ -145,7 +145,7 @@ implementation{
                           temperature compensation
                           humidity = (temperature - 25) * (T1 + T2 * pp_pkt->request_sensor) + RH_linear
                         */
-/*
+//*
                         // 8 bit
                         measure = data;
 
@@ -174,8 +174,11 @@ implementation{
                         // humidity                          = (temperature - 25)   * (T1 + T2 * measure) + humidity
                         arr_humidity[cnt_measure % NMEASURE] = (temperature - 2500) * (1  + 0 )           + humidity;
 //*/
-                        if( 100 <= arr_humidity[cnt_measure % NMEASURE] ){
-                                arr_humidity[cnt_measure % NMEASURE] = 100;
+
+                        // sht11 humidity sensor may provide measurements >100,
+                        // this needs to be corrected
+                        if( 10000 <= arr_humidity[cnt_measure % NMEASURE] ){
+                                arr_humidity[cnt_measure % NMEASURE] = 10000;
                         }
 
 		}
@@ -252,15 +255,15 @@ implementation{
 
 				// set sensor data
 				if( TEMPERATURE == mote2_next_request ){
-                                        // temperature / 1000
+                                        // temperature / 100
                                         temperature = pp_pkt->request_sensor;
                                         DB_BEGIN "temperature\t\t%u C", (temperature / 100) DB_END;
                                         mote2_next_request = HUMIDITY;
 
 				}else if( HUMIDITY == mote2_next_request ){
-                                        // humidity / 1000
+                                        // humidity / 100
                                         humidity = pp_pkt->request_sensor;
-                                        DB_BEGIN "humidity\t\t%u \%", (humidity/100) DB_END;
+                                        DB_BEGIN "humidity\t\t%u percent", (humidity/100) DB_END;
                                         mote2_next_request = TEMPERATURE;
 				}
 			}

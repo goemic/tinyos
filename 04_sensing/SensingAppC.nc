@@ -35,7 +35,7 @@ implementation
         components SerialStartC;
 
 	// sensor
-        components new Msp430InternalTemperatureC() as TempSensor;  
+//        components new Msp430InternalTemperatureC() as TempSensor;  
 	components new SensirionSht11C() as HumidSensor;
 
         App.Boot             -> MainC;
