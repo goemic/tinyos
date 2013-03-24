@@ -14,15 +14,12 @@ enum{
         TEMPERATURE = 1,
         HUMIDITY = 2,
         NMEASURE = 5,
-
-// TODO check, one timer for sending/receiving and sensor reading
-/*
-	REQUEST_PERIOD = 30000
-/*/
-	// TODO just for debugging
+//*
+	REQUEST_PERIOD = 30000,
+/*/ //  debugging:
 	REQUEST_PERIOD = 5000,
 //*/
-        MEASUREMENT_PERIOD = 50
+        MEASUREMENT_PERIOD = 100
 };
 
 // the message type / payload
@@ -32,11 +29,10 @@ typedef nx_struct SensingMsg{
 	nx_uint16_t timestamp;
 } SensingMsg_t;
 
-
+// printf warning turned off
 #define NEW_PRINTF_SEMANTICS 1
 
-
-
+// debugging output
 #define MOTE1 "MOTE 1"
 #define MOTE2 "MOTE 2"
 

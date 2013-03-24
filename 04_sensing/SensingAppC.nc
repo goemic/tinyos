@@ -35,7 +35,8 @@ implementation
         components SerialStartC;
 
 	// sensor
-//        components new Msp430InternalTemperatureC() as TempSensor;  
+// another available sensor for temperature would be the following
+//        components new Msp430InternalTemperatureC() as TempSensor;
 	components new SensirionSht11C() as HumidSensor;
 
         App.Boot             -> MainC;
@@ -53,7 +54,7 @@ implementation
         App.Receive          -> AMReceiverC;
 
 	// sensor
-//	App.ReadTemperature  -> TempSensor;
+//	App.ReadTemperature  -> TempSensor; // ignored
 	App.ReadTemperature  -> HumidSensor.Temperature;
 	App.ReadHumidity     -> HumidSensor.Humidity;
 }

@@ -119,6 +119,8 @@ implementation{
 	event void ReadTemperature.readDone(error_t result, uint16_t data)
 	{
 		if( result == SUCCESS){
+                        // TEMPERATURE CALCULATION
+                        //
                         // convert to centi units
                         // D1 = -40.1       -> -4010 / 100 for 5V
                         // D1 = -39.8       -> -3980 / 100 for 4V
@@ -137,17 +139,9 @@ implementation{
 	{
                 uint16_t measure = 0;
 		if( result == SUCCESS){
-                        /*
-                          calculation of humidity (milli)
-
-                          linear
-                          humidity = C1 + C2 * pp_pkt->request_sensor + C3 * (pp_pkt->request_sensor)^2
-                          temperature compensation
-                          humidity = (temperature - 25) * (T1 + T2 * pp_pkt->request_sensor) + RH_linear
-                        */
-/*
-
-// turned off, due to very high measurements and data sheet
+                        // HUMIDITY CALCULATION
+                        //
+/* // turned off the 8 bit version, due to very high measurements and data sheet
 
                         // 8 bit
                         measure = data;

@@ -1,4 +1,4 @@
-## Makefile
+## Makefile - ASSIGNMENT04
 ##
 ## 1) humidity and temperatur sensor, passive; answeres requests for data
 ## $ make telosb
@@ -28,6 +28,6 @@ include $(MAKERULES)
 ## printf
 CFLAGS += -I$(TOSDIR)/lib/printf
 
-# printf - default buffer is only 250
+# printf - change default buffer (only 250)
 #CFLAGS += -DPRINTF_BUFFER_SIZE=XXX
 
