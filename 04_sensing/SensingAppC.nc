@@ -22,7 +22,8 @@ implementation
         components SensingC as App;
 
 	// clock
-        components new TimerMilliC() as Timer;
+        components new TimerMilliC() as RequestTimer;
+        components new TimerMilliC() as MeasurementTimer;
 
 	// sending / receiving
         components ActiveMessageC;
@@ -34,30 +35,25 @@ implementation
         components SerialStartC;
 
 	// sensor
-// TODO check name DemoSensorC
-//	components new DemoSensorC() as Sensor;   
-	
-        components new Msp430InternalTemperatureC() as TempSensor;
-//	components new Sht21RawHumidityC() as HumidSensor;
+        components new Msp430InternalTemperatureC() as TempSensor;  
 	components new SensirionSht11C() as HumidSensor;
-	
 
-        App.Boot        -> MainC;
-        App.Leds        -> LedsC;
+        App.Boot             -> MainC;
+        App.Leds             -> LedsC;
 
 	// clock
-        App.Timer       -> Timer;
+        App.RequestTimer     -> RequestTimer;
+        App.MeasurementTimer -> MeasurementTimer;
 
 	// sending / receiving
-        App.Packet      -> AMSenderC;
-        App.AMPacket    -> AMSenderC;
-        App.AMSend      -> AMSenderC;
-        App.AMControl   -> ActiveMessageC;
-        App.Receive     -> AMReceiverC;
+        App.Packet           -> AMSenderC;
+        App.AMPacket         -> AMSenderC;
+        App.AMSend           -> AMSenderC;
+        App.AMControl        -> ActiveMessageC;
+        App.Receive          -> AMReceiverC;
 
 	// sensor
-//	App.ReadTemperature -> TempSensor;
-	App.ReadTemperature -> HumidSensor.Temperature;
-	App.ReadHumidity    -> HumidSensor.Humidity;
-
+//	App.ReadTemperature  -> TempSensor;
+	App.ReadTemperature  -> HumidSensor.Temperature;
+	App.ReadHumidity     -> HumidSensor.Humidity;
 }

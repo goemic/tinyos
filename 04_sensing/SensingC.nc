@@ -16,7 +16,8 @@ module SensingC{
 	uses interface Leds;
 
 	// clock
-	uses interface Timer<TMilli> as Timer;
+	uses interface Timer<TMilli> as RequestTimer;
+        uses interface Timer<TMilli> as MeasurementTimer;
 
 	// send/receive
 	uses interface Packet;
@@ -31,8 +32,11 @@ module SensingC{
 }
 implementation{
 	// sensing
+        uint16_t cnt_measure = 0;
 	uint16_t humidity = 0;
+        uint16_t arr_humidity[NMEASURE];
 	uint16_t temperature = 0;
+        uint16_t arr_temperature[NMEASURE];
 	uint16_t mote2_next_request = 1;
 
 	// sending
@@ -50,7 +54,8 @@ implementation{
 	event void AMControl.startDone( error_t err )
 	{
 		if( SUCCESS == err ){
-			call Timer.startPeriodic( TIMER_PERIOD );
+			call RequestTimer.startPeriodic( REQUEST_PERIOD );
+                        call MeasurementTimer.startPeriodic( MEASUREMENT_PERIOD );
 		}else{
 			// restart radio
 			call AMControl.start();
@@ -60,28 +65,15 @@ implementation{
 	// on stopDone
 	event void AMControl.stopDone( error_t err ){}
 
-	event void Timer.fired()
+	event void RequestTimer.fired()
 	{
 		SensingMsg_t* pp_pkt = NULL;
-
-                // signal, that timer is running
-                call Leds.led0Toggle();
-
-		if( TOS_NODE_ID == 1 ){
-			// mote1
-
-                        // reads both sensors
-			call ReadTemperature.read();
-			call ReadHumidity.read();
-		}else{
-                        // mote2
-
-                        // signal 2 leds for timer (debugging)
-                        call Leds.led1Toggle();
-                }
-
 		if( !busy && TOS_NODE_ID == 2){
 			// mote2 and NOT busy
+
+                        // 2 leds for mote2
+                        call Leds.led0Toggle();
+                        call Leds.led1Toggle();
 
                         // prepare package
 			pp_pkt = (SensingMsg_t*) (call Packet.getPayload( &pkt, sizeof( SensingMsg_t ) ) );
@@ -91,7 +83,7 @@ implementation{
 			DB_BEGIN "sending request\n" DB_END;
 
 			// pkt, timestamp
-			pp_pkt->timestamp = (call Timer.getNow());
+			pp_pkt->timestamp = (call RequestTimer.getNow());
 
 			// pkt, request sensor
 			if( TEMPERATURE == mote2_next_request ){
@@ -107,19 +99,82 @@ implementation{
 		}
 	}
 
+	event void MeasurementTimer.fired()
+        {
+		if( TOS_NODE_ID == 1 ){
+                        ++cnt_measure;
+
+			// mote1
+                        call Leds.led0Toggle();
+
+                        // reads both sensors
+			call ReadTemperature.read();
+			call ReadHumidity.read();
+		}else{
+                        // mote2
+                        ;
+                }
+        }
+
 	event void ReadTemperature.readDone(error_t result, uint16_t data)
 	{
 		if( result == SUCCESS){
-			temperature = data;
-			DB_BEGIN "measure raw temperature\t%u", temperature DB_END;
+                        // convert to centi units
+                        // D1 = -40.1       -> -4010 / 100 for 5V
+                        // D1 = -39.8       -> -3980 / 100 for 4V
+                        // D1 = -39.7       -> -3970 / 100 for 3.5V *
+                        // D1 = -39.6       -> -3960 / 100 for 3V
+                        // D1 = -39.4       -> -3940 / 100 for 2.5V
+                        //
+                        // D2 = 0.01        ->     1 / 100 for 14 bit *
+                        // D2 = 0.04        ->     4 / 100 for 12 bit
+                        // temperature                          = D2 * pp_pkt->request_sensor + D1
+                        // convert to centi units  1 / 100
+                        arr_temperature[cnt_measure % NMEASURE] = 1 * data - 3970;
 		}
 	}
 
 	event void ReadHumidity.readDone(error_t result, uint16_t data)
 	{
+                uint16_t measure = 0;
 		if( result == SUCCESS){
-                        humidity = data;
-			DB_BEGIN "measure raw humidity\t%u", humidity DB_END;
+                        /*
+                          calculation of humidity (milli)
+
+                          linear
+                          humidity = C1 + C2 * pp_pkt->request_sensor + C3 * (pp_pkt->request_sensor)^2
+                          temperature compensation
+                          humidity = (temperature - 25) * (T1 + T2 * pp_pkt->request_sensor) + RH_linear
+                        */
+/*
+                        // 8 bit
+                        measure = data;
+
+                        // C1 = -2.0468     ->  -2047 / 1000
+                        // C2 = 0.5872      ->    587 / 1000
+                        // C3 = -0.00040845 ->      0 / 1000
+                        // humidity = C1     + C2 * measure + C3 * measure^2
+                        humidity    = -2047 + 587 * measure + 0;
+
+                        // T1 = 0.01        ->      10 / 1000
+                        // T2 = 0.00128     ->       1 / 1000
+                        // humidity                          = (temperature - 25)    * (T1 + T2 * measure) + humidity
+                        arr_humidity[cnt_measure % NMEASURE] = (10 * temperature - 25000) * (10 + 1  * measure) + humidity;
+/*/
+                        // 12 bit
+                        measure = data;
+
+                        // C1 = -2.0468     ->  -2047 / 1000
+                        // C2 = 0.5872      ->     37 / 1000
+                        // C3 = -0.00008    ->      0 / 1000
+                        // humidity = C1     + C2 * measure + C3 * measure^2
+                        humidity    = -2047  + 37 * measure + 0;
+
+                        // T1 = 0.01        ->      10 / 1000
+                        // T2 = 0.00008     ->       0 / 1000
+                        // humidity                          = (temperature      - 25)    * (T1 + T2 * measure) + humidity
+                        arr_humidity[cnt_measure % NMEASURE] = (10 * temperature - 25000) * (10 + 0 )           + humidity;
+//*/
 		}
 	}
 
@@ -135,10 +190,9 @@ implementation{
                 // payload
 		SensingMsg_t* pp_pkt = NULL;
 
-                // intermediate result
-                uint16_t measure = 0;
-
 		if( len == sizeof( SensingMsg_t )){
+                        uint16_t idx=0;
+
 			// simply blink
 			call Leds.led2Toggle();
 
@@ -146,8 +200,8 @@ implementation{
 
                         DB_BEGIN "received:" DB_END;
                         DB_BEGIN "'''" DB_END;
-                        DB_BEGIN "from mote_id\t%d", (uint16_t) pp_pkt->mote_id DB_END;
-                        DB_BEGIN "at timestamp\t%u", (uint16_t) pp_pkt->timestamp DB_END;
+                        DB_BEGIN "from mote_id\t\t%d", (uint16_t) pp_pkt->mote_id DB_END;
+                        DB_BEGIN "at timestamp\t\t%u", (uint16_t) pp_pkt->timestamp DB_END;
 
 			if( 1 == TOS_NODE_ID ){
 				// mote1, answering with temp data
@@ -156,65 +210,31 @@ implementation{
 				pp_pkt->mote_id = TOS_NODE_ID;
 
 				// pkg timestamp
-				pp_pkt->timestamp = ( call Timer.getNow() );
+				pp_pkt->timestamp = ( call RequestTimer.getNow() );
 
 				// get sensor data
 				if( TEMPERATURE == pp_pkt->request_sensor ){
                                         DB_BEGIN "request for temperature data" DB_END;
-                                        // convert to centi units
-                                        // D1 = -40.1       -> -4010 / 100 for 5V
-                                        // D1 = -39.8       -> -3980 / 100 for 4V
-                                        // D1 = -39.7       -> -3970 / 100 for 3.5V *
-                                        // D1 = -39.6       -> -3960 / 100 for 3V
-                                        // D1 = -39.4       -> -3940 / 100 for 2.5V
-                                        //
-                                        // D2 = 0.01        ->     1 / 100 for 14 bit *
-                                        // D2 = 0.04        ->     4 / 100 for 12 bit
-                                        // temperature = D2 * pp_pkt->request_sensor + D1
-                                        temperature    = 1 * pp_pkt->request_sensor - 3970;
 
-                                        // convert to milli units  1 / 1000
+                                        // last NMEASURE values
+                                        temperature = 0;
+                                        for( idx=0; idx<NMEASURE; ++idx ){
+                                                temperature += arr_temperature[idx];
+                                        }
+                                        temperature = temperature / NMEASURE;
+                                        DB_BEGIN "measured temperature\t%u C ", (temperature/100) DB_END;
 					pp_pkt->request_sensor = 10 * temperature;
 
 				}else if( HUMIDITY == pp_pkt->request_sensor){
                                         DB_BEGIN "request for humidity data" DB_END;
-                                        /*
-                                          calculation of humidity (milli)
 
-                                          linear
-                                          humidity = C1 + C2 * pp_pkt->request_sensor + C3 * (pp_pkt->request_sensor)^2
-                                          temperature compensation
-                                          humidity = (temperature - 25) * (T1 + T2 * pp_pkt->request_sensor) + RH_linear
-                                        */
-//*
-                                        // 8 bit
-                                        measure = pp_pkt->request_sensor;
-
-                                        // C1 = -2.0468     ->  -2047 / 1000
-                                        // C2 = 0.5872      ->    587 / 1000
-                                        // C3 = -0.00040845 ->      0 / 1000
-                                        // humidity = C1     + C2 * measure + C3 * measure^2
-                                        humidity    = -2047 + 587 * measure + 0;
-
-                                        // T1 = 0.01        ->      10 / 1000
-                                        // T2 = 0.00128     ->       1 / 1000
-                                        // humidity = (temperature - 25)    * (T1 + T2 * measure) + humidity
-                                        humidity    = (temperature - 25000) * (10 + 1  * measure) + humidity;
-/*/
-                                        // 12 bit
-                                        measure = pp_pkt->request_sensor;
-
-                                        // C1 = -2.0468     ->  -2047 / 1000
-                                        // C2 = 0.5872      ->     37 / 1000
-                                        // C3 = -0.00008    ->      0 / 1000
-                                        // humidity = C1     + C2 * measure + C3 * measure^2
-                                        humidity    = -2047  + 37 * measure + 0;
-
-                                        // T1 = 0.01        ->      10 / 1000
-                                        // T2 = 0.00008     ->       0 / 1000
-                                        // humidity = (temperature - 25)    * (T1 + T2 * measure) + humidity
-                                        humidity    = (temperature - 25000) * (10 + 0 )           + humidity;
-//*/
+                                        // last NMEASURE values
+                                        humidity = 0;
+                                        for( idx=0; idx<NMEASURE; ++idx ){
+                                                humidity += arr_humidity[idx];
+                                        }
+                                        humidity = humidity / NMEASURE;
+                                        DB_BEGIN "measured humidity\t%u percent ", (humidity/1000) DB_END;
 					pp_pkt->request_sensor = humidity;
 				}else{
 					// error
