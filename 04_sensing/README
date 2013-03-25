@@ -1,0 +1,42 @@
+ASSIGNMENT04
+Lothar Rubusch
+
+
+
+
+FILES
+
+04_sensing                               - project code
+out.log                                  - output for the measuring mote1,
+                                           connected to the serial port (PC)
+ensirion_Humidity_SHT1x_Datasheet_V5.pdf - data sheet on SHT11 combi sensor
+
+
+
+
+BUILD
+
+$ cd ./04_sensing
+$ make telosb
+
+
+
+
+INSTALL
+
+for mote #1
+$ cd ./04_sensing
+$ make telosb install,1
+
+for mote #2
+$ cd ./04_sensing
+$ make telosb install,2
+
+
+
+
+USAGE
+
+connect either of the motes to the serial port and read the log live by
+$ java net.tinyos.tools.PrintfClient -comm serial@/dev/ttyUSB0:telosb
+
