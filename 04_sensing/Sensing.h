@@ -15,7 +15,7 @@ enum{
         HUMIDITY = 2,
         NMEASURE = 5,
 //*
-	REQUEST_PERIOD = 30000,
+	REQUEST_PERIOD = 300000,
 /*/ //  debugging:
 	REQUEST_PERIOD = 5000,
 //*/
