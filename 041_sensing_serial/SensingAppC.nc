@@ -25,6 +25,12 @@ implementation
         components new TimerMilliC() as RequestTimer;
         components new TimerMilliC() as MeasurementTimer;
 
+        
+        // serial communication
+        components SerialActiveMessageC;
+        components new SerialAMSenderC(AM_SERIALMSG);
+        
+
 	// sending / receiving
         components ActiveMessageC;
         components new AMSenderC( AM_SENSING );
@@ -46,11 +52,18 @@ implementation
         App.RequestTimer     -> RequestTimer;
         App.MeasurementTimer -> MeasurementTimer;
 
-	// sending / receiving
+        // serial sending
+        App.SerialPacket -> SerialAMSenderC;
+        App.SerialAMPacket -> SerialAMSenderC;
+        App.SerialAMSend -> SerialAMSenderC;
+        App.SerialAMControl -> SerialActiveMessageC;
+
+	// wifi sending
         App.Packet           -> AMSenderC;
         App.AMPacket         -> AMSenderC;
         App.AMSend           -> AMSenderC;
         App.AMControl        -> ActiveMessageC;
+        // wifi receive
         App.Receive          -> AMReceiverC;
 
 	// sensor

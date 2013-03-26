@@ -19,11 +19,18 @@ module SensingC{
 	uses interface Timer<TMilli> as RequestTimer;
         uses interface Timer<TMilli> as MeasurementTimer;
 
-	// send/receive
+        // serial send
+	uses interface Packet as SerialPacket;
+	uses interface AMPacket as SerialAMPacket;
+	uses interface AMSend as SerialAMSend;
+	uses interface SplitControl as SerialAMControl;
+
+	// wifi send
 	uses interface Packet;
 	uses interface AMPacket;
 	uses interface AMSend;
 	uses interface SplitControl as AMControl;
+        // wifi receive
 	uses interface Receive;
 
 	// sensing
@@ -49,6 +56,7 @@ implementation{
 	{
 		// init
 		call AMControl.start();
+		call SerialAMControl.start();  
 	}
 
 	event void AMControl.startDone( error_t err )
@@ -62,15 +70,20 @@ implementation{
 		}else{
 			// restart radio
 			call AMControl.start();
+                        call SerialAMControl.start();  
 		}
 	}
 
+	event void SerialAMControl.startDone( error_t err ){}  
+
 	// on stopDone
 	event void AMControl.stopDone( error_t err ){}
+	event void SerialAMControl.stopDone( error_t err ){}  
 
 	event void RequestTimer.fired()
 	{
 		SensingMsg_t* pp_pkt = NULL;
+		SerialMsg_t serialpkg;
 		if( !busy && TOS_NODE_ID == 2){
 			// mote2 and NOT busy
 
@@ -95,8 +108,17 @@ implementation{
 				pp_pkt->request_sensor = HUMIDITY;
 			}
 
+                        // serial package
+                        serialpkg.nodeid = pp_pkt->mote_id;
+                        serialpkg.request_sensor = pp_pkt->request_sensor;
+                        serialpkg.timestamp = pp_pkt->timestamp;
+
                         // send
-			if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, &pkt, sizeof( SensingMsg_t ) ) ) ){
+			if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( SensingMsg_t ) ) ) ){
+
+// FIXME
+//                                call SerialAMSend.send( AM_BROADCAST_ADDR, &serialpkg, sizeof( SerialMsg_t ));   
+                                call SerialAMSend.send( AM_BROADCAST_ADDR, &serialpkg, sizeof( SerialMsg_t ));   
 				busy = TRUE;
 			}
 		}
@@ -184,11 +206,20 @@ implementation{
 		}
 	}
 
+	event void SerialAMSend.sendDone( message_t* msg, error_t error ){
+/*
+		if( &pkt == msg ){
+			busy = FALSE;
+		}
+//*/
+	}
+
 	event void AMSend.sendDone( message_t* msg, error_t error ){
 		/* check to ensure the message buffer that was signaled is the
 		   same as the local message buffer */
 		if( &pkt == msg ){
 			busy = FALSE;
+                        // TODO clean message
 		}
 	}
 
@@ -248,6 +279,7 @@ implementation{
 				}
 
 				if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( SensingMsg_t ))) ){
+//                                        call SerialAMSend.send( AM_BROADCAST_ADDR, msg, sizeof( SensingMsg_t ));   
 					busy = TRUE;
 				}
 			}else{
