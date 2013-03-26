@@ -54,8 +54,11 @@ implementation{
 	event void AMControl.startDone( error_t err )
 	{
 		if( SUCCESS == err ){
-                        call RequestTimer.startPeriodic( REQUEST_PERIOD );
-                        call MeasurementTimer.startPeriodic( MEASUREMENT_PERIOD );
+                        if( TOS_NODE_ID == 2 ){
+                                call RequestTimer.startPeriodic( REQUEST_PERIOD );
+                        }else if(TOS_NODE_ID == 1){
+                                call MeasurementTimer.startPeriodic( MEASUREMENT_PERIOD );
+                        }
 		}else{
 			// restart radio
 			call AMControl.start();
