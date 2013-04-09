@@ -51,6 +51,7 @@ implementation{
 
         // packet
 	message_t pkt;
+        message_t serial_pkt;
 
 	event void Boot.booted()
 	{
@@ -82,8 +83,8 @@ implementation{
 
 	event void RequestTimer.fired()
 	{
-		SensingMsg_t* pp_pkt = NULL;
-		SerialMsg_t serialpkg;
+		SensingMsg_t* io_payload = NULL;
+                SerialMsg_t* serial_payload = NULL;
 		if( !busy && TOS_NODE_ID == 2){
 			// mote2 and NOT busy
 
@@ -92,33 +93,31 @@ implementation{
                         call Leds.led1Toggle();
 
                         // prepare package
-			pp_pkt = (SensingMsg_t*) (call Packet.getPayload( &pkt, sizeof( SensingMsg_t ) ) );
+			io_payload = (SensingMsg_t*) (call Packet.getPayload( &pkt, sizeof( SensingMsg_t ) ) );
+			serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t ) ) );  
 
 			// pkt, node id
-			pp_pkt->mote_id = TOS_NODE_ID;
+			io_payload->mote_id = TOS_NODE_ID;
 			DB_BEGIN "sending request\n" DB_END;
 
 			// pkt, timestamp
-			pp_pkt->timestamp = (call RequestTimer.getNow());
+			io_payload->timestamp = (call RequestTimer.getNow());
 
 			// pkt, request sensor
 			if( TEMPERATURE == mote2_next_request ){
-				pp_pkt->request_sensor = TEMPERATURE;
+				io_payload->request_sensor = TEMPERATURE;
 			}else if( HUMIDITY == mote2_next_request ){
-				pp_pkt->request_sensor = HUMIDITY;
+				io_payload->request_sensor = HUMIDITY;
 			}
 
                         // serial package
-                        serialpkg.nodeid = pp_pkt->mote_id;
-                        serialpkg.request_sensor = pp_pkt->request_sensor;
-                        serialpkg.timestamp = pp_pkt->timestamp;
+                        serial_payload->nodeid = io_payload->mote_id;
+                        serial_payload->request_sensor = io_payload->request_sensor;
+                        serial_payload->timestamp = io_payload->timestamp;
 
                         // send
 			if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( SensingMsg_t ) ) ) ){
-
-// FIXME
-//                                call SerialAMSend.send( AM_BROADCAST_ADDR, &serialpkg, sizeof( SerialMsg_t ));   
-                                call SerialAMSend.send( AM_BROADCAST_ADDR, &serialpkg, sizeof( SerialMsg_t ));   
+                                call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( SerialMsg_t ));
 				busy = TRUE;
 			}
 		}
@@ -225,7 +224,7 @@ implementation{
 
 	event message_t* Receive.receive( message_t* msg, void* payload, uint8_t len) {
                 // payload
-		SensingMsg_t* pp_pkt = NULL;
+		SensingMsg_t* io_payload = NULL;
 
 		if( len == sizeof( SensingMsg_t )){
                         uint16_t idx=0;
@@ -233,24 +232,24 @@ implementation{
 			// simply blink
 			call Leds.led2Toggle();
 
-			pp_pkt = (SensingMsg_t*) payload;
+			io_payload = (SensingMsg_t*) payload;
 
                         DB_BEGIN "received:" DB_END;
                         DB_BEGIN "'''" DB_END;
-                        DB_BEGIN "from mote_id\t\t%d", (uint16_t) pp_pkt->mote_id DB_END;
-                        DB_BEGIN "at timestamp\t\t%u", (uint16_t) pp_pkt->timestamp DB_END;
+                        DB_BEGIN "from mote_id\t\t%d", (uint16_t) io_payload->mote_id DB_END;
+                        DB_BEGIN "at timestamp\t\t%u", (uint16_t) io_payload->timestamp DB_END;
 
 			if( 1 == TOS_NODE_ID ){
 				// mote1, answering with temp data
 
 				// pkg mote id
-				pp_pkt->mote_id = TOS_NODE_ID;
+				io_payload->mote_id = TOS_NODE_ID;
 
 				// pkg timestamp
-				pp_pkt->timestamp = ( call RequestTimer.getNow() );
+				io_payload->timestamp = ( call RequestTimer.getNow() );
 
 				// get sensor data
-				if( TEMPERATURE == pp_pkt->request_sensor ){
+				if( TEMPERATURE == io_payload->request_sensor ){
                                         DB_BEGIN "request for temperature data" DB_END;
 
                                         // last NMEASURE values
@@ -260,9 +259,9 @@ implementation{
                                         }
                                         temperature = temperature / NMEASURE;
                                         DB_BEGIN "measured temperature\t%u C ", (temperature/100) DB_END;
-					pp_pkt->request_sensor = temperature;
+					io_payload->request_sensor = temperature;
 
-				}else if( HUMIDITY == pp_pkt->request_sensor){
+				}else if( HUMIDITY == io_payload->request_sensor){
                                         DB_BEGIN "request for humidity data" DB_END;
 
                                         // last NMEASURE values
@@ -272,7 +271,7 @@ implementation{
                                         }
                                         humidity = humidity / NMEASURE;
                                         DB_BEGIN "measured humidity\t%u percent ", (humidity/100) DB_END;
-					pp_pkt->request_sensor = humidity;
+					io_payload->request_sensor = humidity;
 				}else{
 					// error
 					DB_BEGIN "ERROR: request_sensor data invalid" DB_END;
@@ -288,13 +287,13 @@ implementation{
 				// set sensor data
 				if( TEMPERATURE == mote2_next_request ){
                                         // temperature / 100
-                                        temperature = pp_pkt->request_sensor;
+                                        temperature = io_payload->request_sensor;
                                         DB_BEGIN "temperature\t\t%u C", (temperature / 100) DB_END;
                                         mote2_next_request = HUMIDITY;
 
 				}else if( HUMIDITY == mote2_next_request ){
                                         // humidity / 100
-                                        humidity = pp_pkt->request_sensor;
+                                        humidity = io_payload->request_sensor;
                                         DB_BEGIN "humidity\t\t%u percent", (humidity/100) DB_END;
                                         mote2_next_request = TEMPERATURE;
 				}
@@ -307,5 +306,4 @@ implementation{
 
 		return msg;
 	}
-
 }
