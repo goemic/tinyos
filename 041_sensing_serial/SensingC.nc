@@ -94,7 +94,7 @@ implementation{
 
                         // prepare package
 			io_payload = (SensingMsg_t*) (call Packet.getPayload( &pkt, sizeof( SensingMsg_t ) ) );
-			serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t ) ) );  
+			serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t ) ) );
 
 			// pkt, node id
 			io_payload->mote_id = TOS_NODE_ID;
