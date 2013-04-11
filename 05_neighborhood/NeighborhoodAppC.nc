@@ -15,6 +15,9 @@ implementation
         components MainC;
         components LedsC;
 
+        // clock
+        components new TimerMilliC() as Timer_Request;
+
         // this app
         components NeighborhoodC as App;
 
@@ -34,6 +37,9 @@ implementation
 
         App.Boot -> MainC;
         App.Leds -> LedsC;
+
+        // clock
+        App.Timer_Request -> Timer_Request;
 
         // serial sending
         App.SerialPacket -> SerialAMSenderC;

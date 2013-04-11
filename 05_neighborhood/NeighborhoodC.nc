@@ -15,7 +15,7 @@ module NeighborhoodC
         uses interface Leds;
 
         // clock
-// TODO
+        uses interface Timer<TMilli> as Timer_Request;
 
         // serial send
         uses interface Packet as SerialPacket;
@@ -34,14 +34,16 @@ module NeighborhoodC
 }
 implementation
 {
-        // TODO
-
         // wifi sending
         bool busy = FALSE;
 
-
+        // wifi packet
         message_t pkt;
+
+        // serial packet
         message_t serial_pkt;
+
+
 
         event void Boot.booted()
         {
@@ -62,6 +64,8 @@ implementation
                 if( SUCCESS != err ){
                         call AMControl.start();
                         call SerialAMControl.start();
+                }else{
+                        call Timer_Request.startPeriodic( PERIOD_REQUEST );
                 }
         }
 
@@ -92,4 +96,26 @@ implementation
 
         // ...
 //        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( SerialMsg_t ) );
+
+        // timer
+        event void Timer_Request.fired()
+        {
+                ProtoMsg_t* io_payload = NULL;
+                SerialMsg_t* serial_payload = NULL;
+                if( !busy ){
+                        call Leds.led0Toggle();
+
+                        io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
+                        serial_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
+                        
+                        // TODO fill packet
+                        // TODO fill serial packet
+                        
+                        if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
+                                call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
+                                busy = TRUE;
+                        }
+                }
+
+        }
 }
