@@ -22,5 +22,25 @@ implementation
 
         // clock
         component new TimerMilliC() as Timer;
+
+        // serial
+        components SerialActiveMessageC;
+        components new SerialAMSenderC( AM_SERIAL );
+
 // TODO
+
+
+        App.Boot -> MainC;
+        App.leds -> LedsC;
+
+        App.RequestTimer -> RequestTimer; //   
+
+
+        // serial sending
+        App.SerialPacket -> SerialAMSenderC;
+        App.SerialAMPacket -> SerialAMSenderC;
+        App.SerialAMSend -> SerialAMSenderC;
+        App.SerialAMControl -> SerialActiveMessageC;
+
+
 }
