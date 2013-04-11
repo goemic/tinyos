@@ -14,6 +14,9 @@ module NeighborhoodC
         uses interface Boot;
         uses interface Leds;
 
+        // clock
+// TODO
+
         uses interface Packet as SerialPacket;
         uses interface AMPacket as SerialAMPacket;
         uses interface AMSend as SerialAMSend;

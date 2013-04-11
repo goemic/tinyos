@@ -9,9 +9,7 @@
 #include "Neighborhood.h"
 #include "printf.h" // debug
 
-configuration NeighborhoodAppC
-{
-}
+configuration NeighborhoodAppC{}
 implementation
 {
         components MainC;
@@ -24,21 +22,26 @@ implementation
         components SerialActiveMessageC;
         components new SerialAMSenderC( AM_SERIAL );
 
-// TODO
+        // wifi sending
+        components ActiveMessageC;
+        components new AMSenderC( AM_PROTO );
 
+
+
+        // LINKAGE
 
         App.Boot -> MainC;
         App.Leds -> LedsC;
 
-
-//        App.RequestTimer -> RequestTimer; //   
-
-
-        // serial sending
+        // serial wiring
         App.SerialPacket -> SerialAMSenderC;
         App.SerialAMPacket -> SerialAMSenderC;
         App.SerialAMSend -> SerialAMSenderC;
         App.SerialAMControl -> SerialActiveMessageC;
 
-
+        // wifi wiring
+        App.Packet -> AMSenderC;
+        App.AMPacket -> AMSenderC;
+        App.AMSend -> AMSenderC;
+        App.AMControl -> ActiveMessageC;
 }
