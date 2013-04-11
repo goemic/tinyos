@@ -29,7 +29,8 @@ module NeighborhoodC
         uses interface AMSend;
         uses interface SplitControl as AMControl;
 
-        // TODO
+        // wifi receive
+        uses interface Receive;
 }
 implementation
 {
@@ -73,6 +74,12 @@ implementation
                         busy = FALSE;
                         // TODO clean message
                 }
+        }
+
+        event message_t* Receive.receive( message_t* msg, void* payload, uint8_t len){
+                ProtoMsg_t* io_payload = Null;
+                io_payload = (ProtoMsg_t*) payload;
+                // TODO
         }
 
 //        event void SomeTimer.fired()

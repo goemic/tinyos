@@ -18,7 +18,7 @@ implementation
         // this app
         components NeighborhoodC as App;
 
-        // serial
+        // serial sending
         components SerialActiveMessageC;
         components new SerialAMSenderC( AM_SERIAL );
 
@@ -26,22 +26,27 @@ implementation
         components ActiveMessageC;
         components new AMSenderC( AM_PROTO );
 
+        // wifi receiving
+        components new AMReceiverC( AM_PROTO );
 
 
-        // LINKAGE
+        // WIRING
 
         App.Boot -> MainC;
         App.Leds -> LedsC;
 
-        // serial wiring
+        // serial sending
         App.SerialPacket -> SerialAMSenderC;
         App.SerialAMPacket -> SerialAMSenderC;
         App.SerialAMSend -> SerialAMSenderC;
         App.SerialAMControl -> SerialActiveMessageC;
 
-        // wifi wiring
+        // wifi sending
         App.Packet -> AMSenderC;
         App.AMPacket -> AMSenderC;
         App.AMSend -> AMSenderC;
         App.AMControl -> ActiveMessageC;
+
+        // wifi receiving
+        App.Receive -> AMReceiverC;
 }
