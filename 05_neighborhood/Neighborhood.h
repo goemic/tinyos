@@ -7,10 +7,26 @@
 #define NEIGHBORHOOD_H_
 
 enum{
+        AM_PROTO = 11,
+        AM_SERIAL = 22
         // TODO
 };
 
-// TODO
+// io message payload
+typedef nx_struct ProtoMsg{
+        nx_uint16_t node_id;
+        nx_uint16_t node_quality;
+} ProtoMsg_t;
+
+// serial message payload
+typedef nx_struct SerialMsg{
+        nx_uint16_t node_id;
+        nx_uint16_t node_quality;
+} SerialMsg_t;
+
+
+        
+
 
 // debugging output
 #define MOTE1 "MOTE 1"
