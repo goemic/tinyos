@@ -18,10 +18,10 @@ implementation
         components LedsC;
 
         // this app
-        component NeighborhoodC as App;
+        components NeighborhoodC as App;
 
         // clock
-        component new TimerMilliC() as Timer;
+        components new TimerMilliC() as Timer;
 
         // serial
         components SerialActiveMessageC;
