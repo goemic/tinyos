@@ -14,6 +14,13 @@ configuration NeighborhoodAppC
 }
 implementation
 {
-        
+        components MainC;
+        components LedsC;
+
+        // this app
+        component NeighborhoodC as App;
+
+        // clock
+        component new TimerMilliC() as Timer;
 // TODO
 }

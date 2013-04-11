@@ -8,8 +8,9 @@
 
 enum{
         AM_PROTO = 11,
-        AM_SERIAL = 22
-        // TODO
+        AM_SERIAL = 22,
+
+        TIMER_PERIOD = 500
 };
 
 // io message payload
@@ -24,9 +25,8 @@ typedef nx_struct SerialMsg{
         nx_uint16_t node_quality;
 } SerialMsg_t;
 
-
-        
-
+// printf warning turned off
+#define NEW_PRINTF_SEMANTICS 1
 
 // debugging output
 #define MOTE1 "MOTE 1"
