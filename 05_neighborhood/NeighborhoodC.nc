@@ -77,7 +77,7 @@ implementation
         }
 
         event message_t* Receive.receive( message_t* msg, void* payload, uint8_t len){
-                ProtoMsg_t* io_payload = Null;
+                ProtoMsg_t* io_payload = NULL;
                 io_payload = (ProtoMsg_t*) payload;
                 // TODO
         }

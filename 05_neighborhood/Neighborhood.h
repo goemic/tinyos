@@ -10,7 +10,8 @@ enum{
         AM_PROTO = 11,
         AM_SERIAL = 22,
 
-        TIMER_PERIOD = 500
+        // timer
+        PERIOD_REQUEST = 500
 };
 
 // io message payload
