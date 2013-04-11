@@ -205,13 +205,7 @@ implementation{
 		}
 	}
 
-	event void SerialAMSend.sendDone( message_t* msg, error_t error ){
-/*
-		if( &pkt == msg ){
-			busy = FALSE;
-		}
-//*/
-	}
+	event void SerialAMSend.sendDone( message_t* msg, error_t error ){}
 
 	event void AMSend.sendDone( message_t* msg, error_t error ){
 		/* check to ensure the message buffer that was signaled is the

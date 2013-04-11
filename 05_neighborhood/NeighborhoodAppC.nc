@@ -20,9 +20,6 @@ implementation
         // this app
         components NeighborhoodC as App;
 
-        // clock
-        components new TimerMilliC() as Timer;
-
         // serial
         components SerialActiveMessageC;
         components new SerialAMSenderC( AM_SERIAL );
@@ -31,9 +28,10 @@ implementation
 
 
         App.Boot -> MainC;
-        App.leds -> LedsC;
+        App.Leds -> LedsC;
 
-        App.RequestTimer -> RequestTimer; //   
+
+//        App.RequestTimer -> RequestTimer; //   
 
 
         // serial sending
