@@ -43,6 +43,8 @@ implementation
         // serial packet
         message_t serial_pkt;
 
+        // timeout
+        uint16_t send_time;
 
         /*
           FUNCTIONS
@@ -89,7 +91,6 @@ implementation
 
         event message_t* Receive.receive( message_t* msg, void* payload, uint8_t len){
                 ProtoMsg_t* io_payload = NULL;
-                uint16_t node_id;   
                 if( len != sizeof( ProtoMsg_t ) ){
                         DB_BEGIN "ERROR: received wrong packet length" DB_END;
                         // ERROR somegthing's wrong with the length
@@ -104,13 +105,18 @@ implementation
                         return NULL;
                 }
 
-
-                // 
+                if( TOS_ACK == io_payload->tos ){
+                        DB_BEGIN "IiTzOk: ACK received" DB_END;
+// TODO reset send_time 
+                        return msg;
+                }
 
                 // TODO init ACK message to return
                 io_payload->node_id = TOS_NODE_ID;
 
-                io_payload->seri
+                io_payload->sequence_number++;
+
+                io_payload->tos = TOS_ACK;
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
                         // TODO print out serial
@@ -151,6 +157,9 @@ implementation
 // TODO serial number
                         io_payload->sequence_number = 11; // TODO random number
                         serial_payload->sequence_number = io_payload->sequence_number;
+
+                        io_payload->tos = TOS_REQ; // TODO
+                        serial_payload->tos = io_payload->tos;
 // TODO timeout
 // TODO resend
 // TODO confirmation/ack

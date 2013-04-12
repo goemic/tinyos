@@ -11,7 +11,12 @@ enum{
         AM_SERIAL = 22,
 
         // timer
-        PERIOD_REQUEST = 5000
+        PERIOD_REQUEST = 5000,
+
+        // type of service
+// TODO, TCP codes and TOSes
+        TOS_ACK = 8,
+        TOS_REQ = 9,
 };
 
 // io message payload
@@ -19,6 +24,7 @@ typedef nx_struct ProtoMsg{
         nx_uint16_t node_id;
         nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
+        nx_uint8_t tos;
 } ProtoMsg_t;
 
 // serial message payload
@@ -26,6 +32,7 @@ typedef nx_struct SerialMsg{
         nx_uint16_t node_id;
         nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
+        nx_uint8_t tos;
 } SerialMsg_t;
 
 // printf warning turned off
