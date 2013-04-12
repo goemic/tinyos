@@ -32,9 +32,12 @@ implementation
         // wifi receiving
         components new AMReceiverC( AM_PROTO );
 
-
+        // debugging
+        components PrintfC;
+        components SerialStartC;
+        
         // WIRING
-
+        
         App.Boot -> MainC;
         App.Leds -> LedsC;
 

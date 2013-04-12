@@ -89,11 +89,35 @@ implementation
 
         event message_t* Receive.receive( message_t* msg, void* payload, uint8_t len){
                 ProtoMsg_t* io_payload = NULL;
+                uint16_t node_id;   
+                if( len != sizeof( ProtoMsg_t ) ){
+                        DB_BEGIN "ERROR: received wrong packet length" DB_END;
+                        // ERROR somegthing's wrong with the length
+                        return NULL;
+                }
                 io_payload = (ProtoMsg_t*) payload;
 
-                // TODO
+                // TODO read out values
+                if( TOS_NODE_ID == io_payload->node_id ){
+                        // ERROR our node id
+                        DB_BEGIN "ERROR: received own node_id" DB_END;
+                        return NULL;
+                }
 
-                return NULL;     
+
+                // 
+
+                // TODO init ACK message to return
+                io_payload->node_id = TOS_NODE_ID;
+
+                io_payload->seri
+
+                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
+                        // TODO print out serial
+                        busy = TRUE;
+                }
+
+                return msg;
         }
 
 //        event void SomeTimer.fired()
@@ -118,15 +142,15 @@ implementation
                         io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                         serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
                         
-// TODO put in create_packet( node_id, node_quality, serial_number)
+// TODO put in create_packet( node_id, node_quality, sequence_number)
                         io_payload->node_id = TOS_NODE_ID;
                         serial_payload->node_id = io_payload->node_id;
 
                         io_payload->node_quality = -1;
                         serial_payload->node_quality = io_payload->node_quality;
 // TODO serial number
-                        io_payload->serial_number = 11; // TODO random number
-                        serial_payload->serial_number = io_payload->serial_number;
+                        io_payload->sequence_number = 11; // TODO random number
+                        serial_payload->sequence_number = io_payload->sequence_number;
 // TODO timeout
 // TODO resend
 // TODO confirmation/ack

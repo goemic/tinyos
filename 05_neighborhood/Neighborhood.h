@@ -18,14 +18,14 @@ enum{
 typedef nx_struct ProtoMsg{
         nx_uint16_t node_id;
         nx_uint16_t node_quality;
-        nx_uint16_t serial_number;
+        nx_uint16_t sequence_number;
 } ProtoMsg_t;
 
 // serial message payload
 typedef nx_struct SerialMsg{
         nx_uint16_t node_id;
         nx_uint16_t node_quality;
-        nx_uint16_t serial_number;
+        nx_uint16_t sequence_number;
 } SerialMsg_t;
 
 // printf warning turned off
