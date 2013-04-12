@@ -11,19 +11,21 @@ enum{
         AM_SERIAL = 22,
 
         // timer
-        PERIOD_REQUEST = 500
+        PERIOD_REQUEST = 5000
 };
 
 // io message payload
 typedef nx_struct ProtoMsg{
         nx_uint16_t node_id;
         nx_uint16_t node_quality;
+        nx_uint16_t serial_number;
 } ProtoMsg_t;
 
 // serial message payload
 typedef nx_struct SerialMsg{
         nx_uint16_t node_id;
         nx_uint16_t node_quality;
+        nx_uint16_t serial_number;
 } SerialMsg_t;
 
 // printf warning turned off
