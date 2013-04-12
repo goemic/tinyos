@@ -36,7 +36,7 @@ module NeighborhoodC
 implementation
 {
         // wifi sending
-        bool busy = FALSE;
+        bool is_busy = FALSE;
 
         // wifi packet
         message_t pkt;
@@ -44,18 +44,43 @@ implementation
         // serial packet
         message_t serial_pkt;
 
+        // resend
+        bool is_already_resent_once = FALSE;
+
+
+        /*
+          FUNCTIONS
+        */
+
+        // measure link quality to a specified node
+        //
+        // this means
+        // - send time
+        // - response time
+        // - send failure (resends) or unreachable (timeout)
+        void APPLICATION_link_quality( uint16_t node_id )
+        {
+                // send like three pings
+                // TODO
+                // measure send time
+                // measure return time
+                // measure resends
+                // measure failures
+                ;
+        }
+
+
         /*
           BOOT
          */
         event void Boot.booted()
         {
                 if( 1 == TOS_NODE_ID ){
-                        
-// TURN OFF
-                        return;
+                        APPLICATION_link_quality( 2 );
+                        call AMControl.start();
+                        call SerialAMControl.start();
                 }
-                call AMControl.start();
-                call SerialAMControl.start();
+                // all others just passive responde with acks
         }
 
 
@@ -87,9 +112,11 @@ implementation
                 /* check to ensure the message buffer that was signaled is the
                    same as the local message buffer */
                 if( &pkt == msg ){
-                        busy = FALSE;
-                        call Timer_Resend.startPeriodic( PERIOD_RESEND_TIMEOUT );
-                        // TODO clean message
+                        is_busy = FALSE;
+                        if( !is_already_resent_once ){
+                                call Timer_Resend.startPeriodic( PERIOD_RESEND_TIMEOUT );
+                        }
+// TODO clean message
                 }
         }
 
@@ -125,7 +152,7 @@ implementation
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
                         // TODO print out serial
-                        busy = TRUE;
+                        is_busy = TRUE;
                 }
 
                 return msg;
@@ -137,7 +164,7 @@ implementation
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
 
-                if( busy ) return;
+                if( is_busy ) return;
 
                 call Leds.led2Toggle();
 
@@ -166,7 +193,7 @@ implementation
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                        busy = TRUE;
+                        is_busy = TRUE;
                 }
         }
 
@@ -174,22 +201,15 @@ implementation
         {
 // TODO resend packet
 // TODO store packet
-// TODO incase busy flag, waiting list for other packets, etc
-                if( busy ){
+// TODO incase is_busy flag, waiting list for other packets, etc
+                if( is_busy ){
                         // ERROR
                         DB_BEGIN "ERROR: busy sending a packet, while awaiting an ACK of another packet... o_O" DB_END;
                         return;
                 }
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                        busy = TRUE;
+                        is_busy = TRUE;
                 }
         }
-
-        // FUNCTIONS
-        void measure()
-        {
-                ;
-        }
-
 }
