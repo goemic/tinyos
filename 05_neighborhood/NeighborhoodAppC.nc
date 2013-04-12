@@ -17,6 +17,7 @@ implementation
 
         // clock
         components new TimerMilliC() as Timer_Request;
+        components new TimerMilliC() as Timer_Resend;
 
         // this app
         components NeighborhoodC as App;
@@ -43,6 +44,7 @@ implementation
 
         // clock
         App.Timer_Request -> Timer_Request;
+        App.Timer_Resend -> Timer_Resend;
 
         // serial sending
         App.SerialPacket -> SerialAMSenderC;

@@ -12,6 +12,7 @@ enum{
 
         // timer
         PERIOD_REQUEST = 5000,
+        PERIOD_RESEND_TIMEOUT = 3000,
 
         // type of service
 // TODO, TCP codes and TOSes
@@ -34,6 +35,9 @@ typedef nx_struct SerialMsg{
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
 } SerialMsg_t;
+
+
+// DEBUGGING
 
 // printf warning turned off
 #define NEW_PRINTF_SEMANTICS 1

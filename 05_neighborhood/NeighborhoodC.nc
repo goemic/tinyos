@@ -16,6 +16,7 @@ module NeighborhoodC
 
         // clock
         uses interface Timer<TMilli> as Timer_Request;
+        uses interface Timer<TMilli> as Timer_Resend;
 
         // serial send
         uses interface Packet as SerialPacket;
@@ -42,9 +43,6 @@ implementation
 
         // serial packet
         message_t serial_pkt;
-
-        // timeout
-        uint16_t send_time;
 
         /*
           FUNCTIONS
@@ -85,6 +83,7 @@ implementation
                    same as the local message buffer */
                 if( &pkt == msg ){
                         busy = FALSE;
+                        call Timer_Resend.startPeriodic( PERIOD_RESEND_TIMEOUT );
                         // TODO clean message
                 }
         }
@@ -107,7 +106,7 @@ implementation
 
                 if( TOS_ACK == io_payload->tos ){
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
-// TODO reset send_time 
+                        call Timer_Resend.stop();
                         return msg;
                 }
 
@@ -142,33 +141,49 @@ implementation
         {
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
-                if( !busy ){
-                        call Leds.led2Toggle();
 
-                        io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
-                        serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
+                if( busy ) return;
+
+                call Leds.led2Toggle();
+
+                io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
+                serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
                         
 // TODO put in create_packet( node_id, node_quality, sequence_number)
-                        io_payload->node_id = TOS_NODE_ID;
-                        serial_payload->node_id = io_payload->node_id;
+                io_payload->node_id = TOS_NODE_ID;
+                serial_payload->node_id = io_payload->node_id;
 
-                        io_payload->node_quality = -1;
-                        serial_payload->node_quality = io_payload->node_quality;
+                io_payload->node_quality = -1;
+                serial_payload->node_quality = io_payload->node_quality;
 // TODO serial number
-                        io_payload->sequence_number = 11; // TODO random number
-                        serial_payload->sequence_number = io_payload->sequence_number;
+                io_payload->sequence_number = 11; // TODO random number
+                serial_payload->sequence_number = io_payload->sequence_number;
 
-                        io_payload->tos = TOS_REQ; // TODO
-                        serial_payload->tos = io_payload->tos;
+                io_payload->tos = TOS_REQ; // TODO
+                serial_payload->tos = io_payload->tos;
 // TODO timeout
 // TODO resend
 // TODO confirmation/ack
                         
-                        if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
-                                call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                                busy = TRUE;
-                        }
+                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
+                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
+                        busy = TRUE;
                 }
+        }
 
+        event void Timer_Resend.fired()
+        {
+// TODO resend packet
+// TODO store packet
+// TODO incase busy flag, waiting list for other packets, etc
+                if( busy ){
+                        // ERROR
+                        DB_BEGIN "ERROR: busy sending a packet, while awaiting an ACK of another packet... o_O" DB_END;
+                        return;
+                }
+                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
+                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
+                        busy = TRUE;
+                }
         }
 }
