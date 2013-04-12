@@ -45,7 +45,7 @@ implementation
         message_t serial_pkt;
 
         /*
-          FUNCTIONS
+          BOOT
          */
         event void Boot.booted()
         {
@@ -58,13 +58,18 @@ implementation
                 call SerialAMControl.start();
         }
 
-        // serial io
+
+        /*
+          SERIAL IO
+        */
         event void SerialAMControl.startDone( error_t err) {}
         event void SerialAMControl.stopDone( error_t err ){}
 	event void SerialAMSend.sendDone( message_t* msg, error_t error ){}
 
 
-        // wifi io
+        /*
+          WIFI IO
+        */
         event void AMControl.startDone( error_t err )
         {
 // TODO in case start timers here
@@ -72,7 +77,7 @@ implementation
                         call AMControl.start();
                         call SerialAMControl.start();
                 }else{
-                        call Timer_Request.startPeriodic( PERIOD_REQUEST );
+                        call Timer_Request.startOneShot( PERIOD_REQUEST );
                 }
         }
 
@@ -180,4 +185,11 @@ implementation
                         busy = TRUE;
                 }
         }
+
+        // FUNCTIONS
+        void measure()
+        {
+                ;
+        }
+
 }
