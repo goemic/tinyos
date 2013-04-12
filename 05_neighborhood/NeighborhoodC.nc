@@ -209,6 +209,7 @@ implementation
                 }
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
+                        is_already_resent_once = TRUE;
                         is_busy = TRUE;
                 }
         }
