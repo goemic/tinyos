@@ -152,9 +152,13 @@ implementation
 
                 io_payload->tos = TOS_REQ; // TODO
                 serial_payload->tos = io_payload->tos;
-// XXX
-// TODO confirmation/ack
-                        
+
+                // performance measuring (first approach)
+// TODO check
+                io_payload->timestamp_initial = (call Timer_Resend.getNow() );  
+                serial_payload->timestamp_initial = io_payload->timestamp_initial;  
+// XXX                           
+
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
                         busy = TRUE;

@@ -37,6 +37,8 @@ typedef nx_struct SerialMsg{
         nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
+        nx_uint16_t timestamp_initial;  
+        nx_uint16_t timestamp_acked;  
 } SerialMsg_t;
 
 
