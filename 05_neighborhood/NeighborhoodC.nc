@@ -105,6 +105,7 @@ implementation
                 }
 
                 if( TOS_ACK == io_payload->tos ){
+// TODO check sequence number
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
                         call Timer_Resend.stop();
                         return msg;
@@ -125,17 +126,6 @@ implementation
                 return msg;
         }
 
-//        event void SomeTimer.fired()
-//                SensingMsg_t* io_payload = NULL;
-//                SerialMsg_t* serial_payload = Null;
-
-        // ...
-//        serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t ) ) );
-
-
-        // ...
-//        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( SerialMsg_t ) );
-
         // timer
         event void Timer_Request.fired()
         {
@@ -148,6 +138,7 @@ implementation
 
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
+
                         
 // TODO put in create_packet( node_id, node_quality, sequence_number)
                 io_payload->node_id = TOS_NODE_ID;
@@ -161,8 +152,7 @@ implementation
 
                 io_payload->tos = TOS_REQ; // TODO
                 serial_payload->tos = io_payload->tos;
-// TODO timeout
-// TODO resend
+// XXX
 // TODO confirmation/ack
                         
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){

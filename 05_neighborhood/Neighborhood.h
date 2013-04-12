@@ -17,7 +17,7 @@ enum{
         // type of service
 // TODO, TCP codes and TOSes
         TOS_ACK = 8,
-        TOS_REQ = 9,
+        TOS_REQ = 9
 };
 
 // io message payload
@@ -26,6 +26,9 @@ typedef nx_struct ProtoMsg{
         nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
+// TODO measure "performance" ???
+        nx_uint16_t timestamp_initial;  
+        nx_uint16_t timestamp_acked;  
 } ProtoMsg_t;
 
 // serial message payload
