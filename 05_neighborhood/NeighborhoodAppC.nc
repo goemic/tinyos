@@ -5,9 +5,10 @@
  *
  * @author: Lothar Rubusch
  **/
-#include <Timer.h>
 #include "Neighborhood.h"
-#include "printf.h" // debug
+
+#include <Timer.h>
+#include <printf.h> // debug
 
 configuration NeighborhoodAppC{}
 implementation
