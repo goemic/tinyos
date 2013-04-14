@@ -13,52 +13,46 @@
 configuration NeighborhoodAppC{}
 implementation
 {
+        // app
+        components NeighborhoodC as App;
         components MainC;
+        App.Boot -> MainC;
         components LedsC;
+        App.Leds -> LedsC;
 
         // clock
         components new TimerMilliC() as Timer_Request;
+        App.Timer_Request -> Timer_Request;
         components new TimerMilliC() as Timer_Resend;
-
-        // this app
-        components NeighborhoodC as App;
+        App.Timer_Resend -> Timer_Resend;
+        components new TimerMilliC() as Timer_Button; 
+        App.Timer_Button -> Timer_Button; 
 
         // serial sending
         components SerialActiveMessageC;
         components new SerialAMSenderC( AM_SERIAL );
-
-        // wifi sending
-        components ActiveMessageC;
-        components new AMSenderC( AM_PROTO );
-
-        // wifi receiving
-        components new AMReceiverC( AM_PROTO );
-
-        // debugging
-        components PrintfC;
-        components SerialStartC;
-        
-        // WIRING
-        
-        App.Boot -> MainC;
-        App.Leds -> LedsC;
-
-        // clock
-        App.Timer_Request -> Timer_Request;
-        App.Timer_Resend -> Timer_Resend;
-
-        // serial sending
         App.SerialPacket -> SerialAMSenderC;
         App.SerialAMPacket -> SerialAMSenderC;
         App.SerialAMSend -> SerialAMSenderC;
         App.SerialAMControl -> SerialActiveMessageC;
 
         // wifi sending
+        components ActiveMessageC;
+        components new AMSenderC( AM_PROTO );
         App.Packet -> AMSenderC;
         App.AMPacket -> AMSenderC;
         App.AMSend -> AMSenderC;
         App.AMControl -> ActiveMessageC;
 
         // wifi receiving
+        components new AMReceiverC( AM_PROTO );
         App.Receive -> AMReceiverC;
+
+        components UserButtonC;
+        App.Get -> UserButtonC;
+        App.Notify -> UserButtonC;
+
+        // debugging
+        components PrintfC;
+        components SerialStartC;
 }

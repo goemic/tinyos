@@ -5,9 +5,11 @@
  *
  * @author: Lothar Rubusch
  **/
+#include "Neighborhood.h"
+
 #include <Timer.h>
 #include <printf.h>
-#include "Neighborhood.h"
+#include <UserButton.h>
 
 module NeighborhoodC
 {
@@ -17,6 +19,7 @@ module NeighborhoodC
         // clock
         uses interface Timer<TMilli> as Timer_Request;
         uses interface Timer<TMilli> as Timer_Resend;
+        uses interface Timer<TMilli> as Timer_Button;  
 
         // serial send
         uses interface Packet as SerialPacket;
@@ -32,6 +35,10 @@ module NeighborhoodC
 
         // wifi receive
         uses interface Receive;
+
+        // button
+        uses interface Get<button_state_t>;
+        uses interface Notify<button_state_t>;
 }
 implementation
 {
@@ -51,7 +58,7 @@ implementation
         /*
           FUNCTIONS
         */
-
+/*
         // measure link quality to a specified node
         //
         // this means
@@ -86,19 +93,17 @@ implementation
                 io_payload->tos = tos; // TODO
                 serial_payload->tos = io_payload->tos;
         }
-
+//b*/
 
         /*
           BOOT
          */
         event void Boot.booted()
         {
-                if( 1 == TOS_NODE_ID ){
-                        APPLICATION_link_quality( 2 );
-                        call AMControl.start();
-                        call SerialAMControl.start();
-                }
-                // all others just passive responde with acks
+//                APPLICATION_link_quality( 2 );
+                call AMControl.start();
+                call SerialAMControl.start();
+                call Timer_Button.startPeriodic( 4096 );  
         }
 
 
@@ -119,11 +124,19 @@ implementation
                 if( SUCCESS != err ){
                         call AMControl.start();
                         call SerialAMControl.start();
-                }else{
-//                        call Timer_Request.startOneShot( PERIOD_RESEND_TIMEOUT );
-                        call Timer_Request.startPeriodic( PERIOD_REQUEST );
-                        
                 }
+/* TODO 
+                else{
+//                        call Timer_Request.startOneShot( PERIOD_RESEND_TIMEOUT );
+                        
+                        if( 1 == TOS_NODE_ID ){
+                                call Timer_Request.startPeriodic( PERIOD_REQUEST );
+                        }else{
+                                // all others
+                                ;
+                        }
+                }
+//*/
         }
 
         event void AMControl.stopDone( error_t err ){}
@@ -156,11 +169,11 @@ implementation
                         return NULL;
                 }
 
-
                 if( TOS_ACK == io_payload->tos ){
                         // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
-                        call Leds.led1Toggle();
+                        call Leds.led0Off();  
+//                        call Leds.led1Toggle();
 // TODO check sequence number
                         call Timer_Resend.stop();
                         return msg;
@@ -168,7 +181,7 @@ implementation
                 }else if( TOS_REQ == io_payload->tos ){
                         // received REQ
                         DB_BEGIN "IiTzOk: REQ received" DB_END;
-                        call Leds.led2Toggle();
+                        call Leds.led0On();  
 
                         // init ACK message to return
                         io_payload->node_id = TOS_NODE_ID;
@@ -190,7 +203,23 @@ implementation
                 return msg;
         }
 
-        // timer
+        /*
+          BUTTONS
+        */
+
+        event void Notify.notify( button_state_t state )
+        {
+                if( BUTTON_PRESSED == state ){
+                        call Leds.led1On();
+                }else if( BUTTON_RELEASED == state ){
+                        call Leds.led1Off();
+                }
+        }
+
+
+        /*
+          TIMER
+        */
         event void Timer_Request.fired()
         {
                 ProtoMsg_t* io_payload = NULL;
@@ -222,7 +251,7 @@ implementation
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                        call Leds.led0Toggle();
+                        call Leds.led2Toggle();
                         is_busy = TRUE;
                 }
         }
@@ -243,4 +272,14 @@ implementation
                         is_busy = TRUE;
                 }
         }
+
+       event void Timer_Button.fired(){
+               button_state_t bs;
+               bs = call Get.get();
+               if( bs == BUTTON_PRESSED ){
+                       call Leds.led1On();
+               }else if( bs == BUTTON_RELEASED ){
+                       call Leds.led1Off();
+               }
+       }
 }
