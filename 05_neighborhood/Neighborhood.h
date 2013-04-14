@@ -11,7 +11,7 @@ enum{
         AM_SERIAL = 22,
 
         // timer
-        PERIOD_REQUEST = 5000,
+        PERIOD_REQUEST = 0,
         PERIOD_RESEND_TIMEOUT = 3000,
 
         // type of service

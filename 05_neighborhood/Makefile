@@ -23,7 +23,7 @@ COMPONENT=NeighborhoodAppC
 include $(MAKERULES)
 
 ## CC2420 radio settings (up to 31 possible)
-#CFLAGS += -DCC2420_DEF_RFPOWER=3
+CFLAGS += -DCC2420_DEF_RFPOWER=1            
 
 ## printf
 CFLAGS += -I$(TOSDIR)/lib/printf

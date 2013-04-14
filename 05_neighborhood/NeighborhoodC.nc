@@ -53,6 +53,9 @@ implementation
         // resend
         bool is_already_resent_once = FALSE;
 
+        // sequence_number
+        uint16_t sequence_number = 0;
+
 
         /*
           FUNCTIONS
@@ -104,9 +107,7 @@ implementation
 //                APPLICATION_link_quality( 2 );
                 call AMControl.start();
                 call SerialAMControl.start();
-                if( 1 == TOS_NODE_ID ){
-                        call Notify.enable();
-                }
+                call Notify.enable();
         }
 
 
@@ -156,8 +157,9 @@ implementation
                    same as the local message buffer */
                 if( &pkt == msg ){
                         is_busy = FALSE;
-                        call Leds.led0Off();  
                         if( !is_already_resent_once ){
+// TODO test resend for request
+// XXX
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }
 // TODO clean message
@@ -183,10 +185,13 @@ implementation
                         // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
                         call Leds.led1Off();  
-                        call Leds.led2Toggle();
-// TODO check sequence number
+                        if( (sequence_number+1) != io_payload->sequence_number ){
+                                DB_BEGIN "ERROR: ACK with wrong sequence number received, dropped" DB_END;
+                                return NULL;
+                        }
+                        DB_BEGIN "\tsequence number ok" DB_END;
                         call Timer_Resend.stop();
-                        return msg;
+                        call Leds.led2Toggle();
 
                 }else if( TOS_REQ == io_payload->tos ){
                         // received REQ
@@ -203,6 +208,7 @@ implementation
                         if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
 // TODO print out serial
                                 DB_BEGIN "\tconfirmed with ACK\n" DB_END;
+                                call Leds.led0Off();  
                                 is_busy = TRUE;
                         }
                 }else{
@@ -218,6 +224,7 @@ implementation
           TIMER
         */
 
+        // send request
         event void Timer_Request.fired()
         {
                 ProtoMsg_t* io_payload = NULL;
@@ -236,7 +243,7 @@ implementation
                 io_payload->node_quality = 0;  
                 serial_payload->node_quality = io_payload->node_quality;  
 // TODO serial number
-                io_payload->sequence_number = 11; // TODO random number
+                io_payload->sequence_number = sequence_number; // TODO random number
                 serial_payload->sequence_number = io_payload->sequence_number;
 
                 io_payload->tos = TOS_REQ; // TODO
