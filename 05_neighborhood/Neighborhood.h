@@ -28,7 +28,7 @@ typedef nx_struct ProtoMsg{
         nx_uint8_t tos;
 // TODO measure "performance" ???
         nx_uint16_t timestamp_initial;  
-        nx_uint16_t timestamp_acked;  
+//        nx_uint16_t timestamp_acked;  
 } ProtoMsg_t;
 
 // serial message payload
@@ -38,7 +38,7 @@ typedef nx_struct SerialMsg{
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
         nx_uint16_t timestamp_initial;  
-        nx_uint16_t timestamp_acked;  
+//        nx_uint16_t timestamp_acked;  
 } SerialMsg_t;
 
 
@@ -48,8 +48,6 @@ typedef nx_struct SerialMsg{
 #define NEW_PRINTF_SEMANTICS 1
 
 // debugging output
-#define MOTE1 "MOTE 1"
-#define MOTE2 "MOTE 2"
 #define DB_BEGIN                                \
   printf( "MOTE %d: ", TOS_NODE_ID );           \
   printf(
