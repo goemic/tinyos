@@ -113,6 +113,24 @@ implementation
 
 
         /*
+          BUTTONS
+        */
+
+        event void Notify.notify( button_state_t state )
+        {
+                if( BUTTON_PRESSED == state ){
+                        call Leds.led1On();
+                        call Timer_Request.startOneShot( PERIOD_REQUEST );
+                }
+/*
+                else if( BUTTON_RELEASED == state ){
+                        call Leds.led1Off();
+                }
+*/
+        }
+
+
+        /*
           SERIAL IO
         */
 
@@ -213,24 +231,6 @@ implementation
 
 
         /*
-          BUTTONS
-        */
-
-        event void Notify.notify( button_state_t state )
-        {
-                if( BUTTON_PRESSED == state ){
-                        call Leds.led1On();
-                        call Timer_Request.startOneShot( PERIOD_REQUEST );
-                }
-/*
-                else if( BUTTON_RELEASED == state ){
-                        call Leds.led1Off();
-                }
-*/
-        }
-
-
-        /*
           TIMER
         */
 
@@ -265,7 +265,7 @@ implementation
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-//                        call Leds.led2Toggle();
+                        DB_BEGIN "send request" DB_END;
                         is_busy = TRUE;
                 }
         }
