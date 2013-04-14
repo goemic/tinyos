@@ -69,6 +69,24 @@ implementation
                 ;
         }
 
+        void prepare_payload( ProtoMsg_t* io_payload
+                              , SerialMsg_t* serial_payload
+                              , uint16_t sequence_number
+                              , uint8_t tos )
+        {
+                io_payload->node_id = TOS_NODE_ID;
+                serial_payload->node_id = io_payload->node_id;
+
+                io_payload->node_quality = 0;
+                serial_payload->node_quality = io_payload->node_quality;
+// TODO serial number
+                io_payload->sequence_number = sequence_number; // TODO random number
+                serial_payload->sequence_number = io_payload->sequence_number;
+
+                io_payload->tos = tos; // TODO
+                serial_payload->tos = io_payload->tos;
+        }
+
 
         /*
           BOOT
@@ -176,7 +194,7 @@ implementation
                 io_payload->node_id = TOS_NODE_ID;
                 serial_payload->node_id = io_payload->node_id;
 
-                io_payload->node_quality = -1;
+                io_payload->node_quality = 0;
                 serial_payload->node_quality = io_payload->node_quality;
 // TODO serial number
                 io_payload->sequence_number = 11; // TODO random number
