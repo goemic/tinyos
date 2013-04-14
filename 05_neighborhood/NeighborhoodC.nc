@@ -153,6 +153,7 @@ implementation
                    same as the local message buffer */
                 if( &pkt == msg ){
                         is_busy = FALSE;
+                        call Leds.led0Off();  
                         if( !is_already_resent_once ){
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }
@@ -180,7 +181,7 @@ implementation
                         // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
                         call Leds.led1Off();  
-//                        call Leds.led1Toggle();
+                        call Leds.led2Toggle();
 // TODO check sequence number
                         call Timer_Resend.stop();
                         return msg;
@@ -264,7 +265,7 @@ implementation
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                        call Leds.led2Toggle();
+//                        call Leds.led2Toggle();
                         is_busy = TRUE;
                 }
         }
