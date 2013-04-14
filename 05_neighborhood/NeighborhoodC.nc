@@ -19,7 +19,7 @@ module NeighborhoodC
         // clock
         uses interface Timer<TMilli> as Timer_Request;
         uses interface Timer<TMilli> as Timer_Resend;
-        uses interface Timer<TMilli> as Timer_Button;  
+//        uses interface Timer<TMilli> as Timer_Button;  
 
         // serial send
         uses interface Packet as SerialPacket;
@@ -95,21 +95,27 @@ implementation
         }
 //b*/
 
+
         /*
           BOOT
          */
+
         event void Boot.booted()
         {
 //                APPLICATION_link_quality( 2 );
                 call AMControl.start();
                 call SerialAMControl.start();
-                call Timer_Button.startPeriodic( 4096 );  
+//                call Timer_Button.startPeriodic( 4096 );  
+                if( 1 == TOS_NODE_ID ){
+                        call Notify.enable();
+                }
         }
 
 
         /*
           SERIAL IO
         */
+
         event void SerialAMControl.startDone( error_t err) {}
         event void SerialAMControl.stopDone( error_t err ){}
 	event void SerialAMSend.sendDone( message_t* msg, error_t error ){}
@@ -118,6 +124,7 @@ implementation
         /*
           WIFI IO
         */
+
         event void AMControl.startDone( error_t err )
         {
 // TODO in case start timers here
@@ -172,7 +179,7 @@ implementation
                 if( TOS_ACK == io_payload->tos ){
                         // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
-                        call Leds.led0Off();  
+                        call Leds.led1Off();  
 //                        call Leds.led1Toggle();
 // TODO check sequence number
                         call Timer_Resend.stop();
@@ -203,6 +210,7 @@ implementation
                 return msg;
         }
 
+
         /*
           BUTTONS
         */
@@ -211,15 +219,20 @@ implementation
         {
                 if( BUTTON_PRESSED == state ){
                         call Leds.led1On();
-                }else if( BUTTON_RELEASED == state ){
+                        call Timer_Request.startOneShot( PERIOD_REQUEST );
+                }
+/*
+                else if( BUTTON_RELEASED == state ){
                         call Leds.led1Off();
                 }
+*/
         }
 
 
         /*
           TIMER
         */
+
         event void Timer_Request.fired()
         {
                 ProtoMsg_t* io_payload = NULL;
@@ -272,14 +285,4 @@ implementation
                         is_busy = TRUE;
                 }
         }
-
-       event void Timer_Button.fired(){
-               button_state_t bs;
-               bs = call Get.get();
-               if( bs == BUTTON_PRESSED ){
-                       call Leds.led1On();
-               }else if( bs == BUTTON_RELEASED ){
-                       call Leds.led1Off();
-               }
-       }
 }

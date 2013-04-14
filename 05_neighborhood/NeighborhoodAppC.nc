@@ -25,8 +25,8 @@ implementation
         App.Timer_Request -> Timer_Request;
         components new TimerMilliC() as Timer_Resend;
         App.Timer_Resend -> Timer_Resend;
-        components new TimerMilliC() as Timer_Button; 
-        App.Timer_Button -> Timer_Button; 
+//        components new TimerMilliC() as Timer_Button; 
+//        App.Timer_Button -> Timer_Button; 
 
         // serial sending
         components SerialActiveMessageC;
