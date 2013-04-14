@@ -244,7 +244,7 @@ implementation
 
                 // performance measuring (first approach)
 // TODO check
-                io_payload->timestamp_initial = (call Timer_Resend.getNow() );  
+                io_payload->timestamp_initial = (call Timer_Request.getNow() );  
                 serial_payload->timestamp_initial = io_payload->timestamp_initial;  
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
