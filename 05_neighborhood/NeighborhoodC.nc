@@ -19,7 +19,6 @@ module NeighborhoodC
         // clock
         uses interface Timer<TMilli> as Timer_Request;
         uses interface Timer<TMilli> as Timer_Resend;
-//        uses interface Timer<TMilli> as Timer_Button;  
 
         // serial send
         uses interface Packet as SerialPacket;
@@ -105,7 +104,6 @@ implementation
 //                APPLICATION_link_quality( 2 );
                 call AMControl.start();
                 call SerialAMControl.start();
-//                call Timer_Button.startPeriodic( 4096 );  
                 if( 1 == TOS_NODE_ID ){
                         call Notify.enable();
                 }
@@ -122,11 +120,6 @@ implementation
                         call Leds.led1On();
                         call Timer_Request.startOneShot( PERIOD_REQUEST );
                 }
-/*
-                else if( BUTTON_RELEASED == state ){
-                        call Leds.led1Off();
-                }
-*/
         }
 
 
@@ -147,21 +140,13 @@ implementation
         {
 // TODO in case start timers here
                 if( SUCCESS != err ){
+                        // restart services when failed
                         call AMControl.start();
                         call SerialAMControl.start();
+                }else{
+                        // else
+                        ;
                 }
-/* TODO 
-                else{
-//                        call Timer_Request.startOneShot( PERIOD_RESEND_TIMEOUT );
-                        
-                        if( 1 == TOS_NODE_ID ){
-                                call Timer_Request.startPeriodic( PERIOD_REQUEST );
-                        }else{
-                                // all others
-                                ;
-                        }
-                }
-//*/
         }
 
         event void AMControl.stopDone( error_t err ){}
@@ -188,7 +173,6 @@ implementation
                 }
                 io_payload = (ProtoMsg_t*) payload;
 
-                // TODO read out values
                 if( TOS_NODE_ID == io_payload->node_id ){
                         // ERROR our node id
                         DB_BEGIN "ERROR: received own node_id" DB_END;
