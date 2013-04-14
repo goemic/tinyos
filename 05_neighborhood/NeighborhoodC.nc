@@ -160,12 +160,15 @@ implementation
                 if( TOS_ACK == io_payload->tos ){
                         // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
+                        call Leds.led1Toggle();
 // TODO check sequence number
                         call Timer_Resend.stop();
                         return msg;
+
                 }else if( TOS_REQ == io_payload->tos ){
                         // received REQ
                         DB_BEGIN "IiTzOk: REQ received" DB_END;
+                        call Leds.led2Toggle();
 
                         // init ACK message to return
                         io_payload->node_id = TOS_NODE_ID;
@@ -195,8 +198,6 @@ implementation
 
                 if( is_busy ) return;
 
-                call Leds.led2Toggle();
-
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
 
@@ -218,10 +219,10 @@ implementation
 // TODO check
                 io_payload->timestamp_initial = (call Timer_Resend.getNow() );  
                 serial_payload->timestamp_initial = io_payload->timestamp_initial;  
-// XXX                           
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
+                        call Leds.led0Toggle();
                         is_busy = TRUE;
                 }
         }
