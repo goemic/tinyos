@@ -144,9 +144,6 @@ implementation
                         // restart services when failed
                         call AMControl.start();
                         call SerialAMControl.start();
-                }else{
-                        // else
-                        ;
                 }
         }
 
@@ -158,9 +155,10 @@ implementation
                 if( &pkt == msg ){
                         is_busy = FALSE;
                         if( !is_already_resent_once ){
-// TODO test resend for request
-// XXX
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
+                        }else{
+// TODO implement dropping
+                                DB_BEGIN "dropped" DB_END;
                         }
 // TODO clean message
                 }
@@ -263,14 +261,15 @@ implementation
 
         event void Timer_Resend.fired()
         {
-// TODO resend packet
 // TODO store packet
 // TODO incase is_busy flag, waiting list for other packets, etc
+// TODO check and indicate 'dropped packets'
                 if( is_busy ){
                         // ERROR
                         DB_BEGIN "ERROR: busy sending a packet, while awaiting an ACK of another packet... o_O" DB_END;
                         return;
                 }
+                DB_BEGIN "resending packet" DB_END;
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
                         is_already_resent_once = TRUE;
