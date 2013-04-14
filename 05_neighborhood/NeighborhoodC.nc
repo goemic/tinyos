@@ -120,7 +120,9 @@ implementation
                         call AMControl.start();
                         call SerialAMControl.start();
                 }else{
-                        call Timer_Request.startOneShot( PERIOD_REQUEST );
+//                        call Timer_Request.startOneShot( PERIOD_RESEND_TIMEOUT );
+                        call Timer_Request.startPeriodic( PERIOD_REQUEST );
+                        
                 }
         }
 
@@ -132,7 +134,7 @@ implementation
                 if( &pkt == msg ){
                         is_busy = FALSE;
                         if( !is_already_resent_once ){
-                                call Timer_Resend.startPeriodic( PERIOD_RESEND_TIMEOUT );
+                                call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }
 // TODO clean message
                 }
@@ -154,23 +156,32 @@ implementation
                         return NULL;
                 }
 
+
                 if( TOS_ACK == io_payload->tos ){
-// TODO check sequence number
+                        // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
+// TODO check sequence number
                         call Timer_Resend.stop();
                         return msg;
-                }
+                }else if( TOS_REQ == io_payload->tos ){
+                        // received REQ
+                        DB_BEGIN "IiTzOk: REQ received" DB_END;
 
-                // TODO init ACK message to return
-                io_payload->node_id = TOS_NODE_ID;
+                        // init ACK message to return
+                        io_payload->node_id = TOS_NODE_ID;
 
-                io_payload->sequence_number++;
+                        io_payload->sequence_number++;
 
-                io_payload->tos = TOS_ACK;
+                        io_payload->tos = TOS_ACK;
 
-                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
-                        // TODO print out serial
-                        is_busy = TRUE;
+                        if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
+// TODO print out serial
+                                DB_BEGIN "\tconfirmed with ACK\n" DB_END;
+                                is_busy = TRUE;
+                        }
+                }else{
+                        // error
+                        DB_BEGIN "ERROR: wrong message type" DB_END
                 }
 
                 return msg;
@@ -194,8 +205,8 @@ implementation
                 io_payload->node_id = TOS_NODE_ID;
                 serial_payload->node_id = io_payload->node_id;
 
-                io_payload->node_quality = 0;
-                serial_payload->node_quality = io_payload->node_quality;
+                io_payload->node_quality = 0;  
+                serial_payload->node_quality = io_payload->node_quality;  
 // TODO serial number
                 io_payload->sequence_number = 11; // TODO random number
                 serial_payload->sequence_number = io_payload->sequence_number;
