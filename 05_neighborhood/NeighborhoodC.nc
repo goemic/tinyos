@@ -81,7 +81,7 @@ implementation
 //*/
 
 //*
-        // init packets
+        // setup packets
         void setup_payload( ProtoMsg_t* io_payload
                             , SerialMsg_t* serial_payload
                             , uint8_t tos )
@@ -89,6 +89,7 @@ implementation
                 io_payload->node_id = TOS_NODE_ID;
                 serial_payload->node_id = io_payload->node_id;
 
+// TODO do we need this?
                 io_payload->node_quality = 0;
                 serial_payload->node_quality = io_payload->node_quality;
 
@@ -103,6 +104,15 @@ implementation
                 serial_payload->timestamp_initial = io_payload->timestamp_initial;  
         }
 //*/
+
+        void send_packet()
+        {
+                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
+                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
+                        DB_BEGIN "send request" DB_END;
+                        is_busy = TRUE;
+                }
+        }
 
 
         /*
@@ -240,8 +250,9 @@ implementation
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
 
-                        
-                setup_payload( io_payload, serial_payload, TOS_REQ );
+                
+                setup_payload( io_payload, serial_payload, TOS_REQ ); // TODO test   
+// XXX
                 
 /*
 // TODO put in create_packet( node_id, node_quality, sequence_number)
@@ -263,11 +274,14 @@ implementation
                 serial_payload->timestamp_initial = io_payload->timestamp_initial;  
 //*/
 
+                send_packet(); // TODO test
+/*
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
                         DB_BEGIN "send request" DB_END;
                         is_busy = TRUE;
                 }
+//*/
         }
 
         event void Timer_Resend.fired()
