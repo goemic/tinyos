@@ -84,10 +84,15 @@ implementation
         // setup packets
         void setup_payload( ProtoMsg_t* io_payload
                             , SerialMsg_t* serial_payload
+                            , uint8_t dst_node_id
                             , uint8_t tos )
+
         {
-                io_payload->node_id = TOS_NODE_ID;
-                serial_payload->node_id = io_payload->node_id;
+                io_payload->src_node_id = TOS_NODE_ID;
+                serial_payload->src_node_id = io_payload->src_node_id;
+
+                io_payload->dst_node_id = dst_node_id;
+                serial_payload->dst_node_id = io_payload->dst_node_id;
 
 // TODO do we need this?
                 io_payload->node_quality = 0;
@@ -182,17 +187,28 @@ implementation
         }
 
         event message_t* Receive.receive( message_t* msg, void* payload, uint8_t len){
+                uint8_t dst_node_id;
                 ProtoMsg_t* io_payload = NULL;
+                SerialMsg_t* serial_payload = NULL;
                 if( len != sizeof( ProtoMsg_t ) ){
                         DB_BEGIN "ERROR: received wrong packet length" DB_END;
                         // ERROR somegthing's wrong with the length
                         return NULL;
                 }
-                io_payload = (ProtoMsg_t*) payload;
 
-                if( TOS_NODE_ID == io_payload->node_id ){
+                // obtain payload
+                io_payload = (ProtoMsg_t*) payload;
+                serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
+
+                if( TOS_NODE_ID != io_payload->dst_node_id ){
+                        DB_BEGIN "TODO: not for me" DB_END;
+// TODO handle forward
+                        return NULL;
+                }
+
+                if( TOS_NODE_ID == io_payload->src_node_id ){
                         // ERROR our node id
-                        DB_BEGIN "ERROR: received own node_id" DB_END;
+                        DB_BEGIN "ERROR: received own src_node_id" DB_END;
                         return NULL;
                 }
 
@@ -213,19 +229,25 @@ implementation
                         DB_BEGIN "IiTzOk: REQ received" DB_END;
                         call Leds.led0On();  
 
+                        dst_node_id = io_payload->src_node_id;
+                        setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
+/*
                         // init ACK message to return
-                        io_payload->node_id = TOS_NODE_ID;
+                        io_payload->src_node_id = TOS_NODE_ID;
 
                         io_payload->sequence_number++;
 
                         io_payload->tos = TOS_ACK;
-
+//*/
+                        send_packet(); // TODO test
+/*
                         if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
 // TODO print out serial
                                 DB_BEGIN "\tconfirmed with ACK\n" DB_END;
-                                call Leds.led0Off();  
                                 is_busy = TRUE;
                         }
+//*/
+                        call Leds.led0Off();  
                 }else{
                         // error
                         DB_BEGIN "ERROR: wrong message type" DB_END
@@ -244,6 +266,7 @@ implementation
         {
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
+                uint8_t dst_node_id = 2;
 
                 if( is_busy ) return;
 
@@ -251,9 +274,8 @@ implementation
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
 
                 
-                setup_payload( io_payload, serial_payload, TOS_REQ ); // TODO test   
-// XXX
-                
+
+                setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ ); // TODO test   
 /*
 // TODO put in create_packet( node_id, node_quality, sequence_number)
                 io_payload->node_id = TOS_NODE_ID;
@@ -295,10 +317,14 @@ implementation
                         return;
                 }
                 DB_BEGIN "resending packet" DB_END;
+
+                send_packet(); // TODO test
+//*
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                        is_already_resent_once = TRUE;
+                        is_already_resent_once = TRUE;   
                         is_busy = TRUE;
                 }
+//*/
         }
 }

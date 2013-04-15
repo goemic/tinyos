@@ -22,7 +22,8 @@ enum{
 
 // io message payload
 typedef nx_struct ProtoMsg{
-        nx_uint16_t node_id;
+        nx_uint8_t src_node_id;
+        nx_uint8_t dst_node_id;
         nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
@@ -33,7 +34,8 @@ typedef nx_struct ProtoMsg{
 
 // serial message payload
 typedef nx_struct SerialMsg{
-        nx_uint16_t node_id;
+        nx_uint8_t src_node_id;
+        nx_uint8_t dst_node_id;
         nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
