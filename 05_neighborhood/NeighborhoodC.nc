@@ -230,6 +230,9 @@ implementation
                         call Leds.led0On();  
 
                         dst_node_id = io_payload->src_node_id;
+// TODO append node_id to neighbor node id list
+// TODO create neighbor node id list
+
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
 /*
                         // init ACK message to return
