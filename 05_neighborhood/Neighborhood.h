@@ -20,6 +20,8 @@ enum{
         TOS_REQ = 9
 };
 
+// TODO think about TTL field in payload
+
 // io message payload
 typedef nx_struct ProtoMsg{
         nx_uint8_t src_node_id;
