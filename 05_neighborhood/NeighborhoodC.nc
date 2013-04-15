@@ -78,24 +78,31 @@ implementation
                 ;
         }
 
-        void prepare_payload( ProtoMsg_t* io_payload
-                              , SerialMsg_t* serial_payload
-                              , uint16_t sequence_number
-                              , uint8_t tos )
+//*/
+
+//*
+        // init packets
+        void setup_payload( ProtoMsg_t* io_payload
+                            , SerialMsg_t* serial_payload
+                            , uint8_t tos )
         {
                 io_payload->node_id = TOS_NODE_ID;
                 serial_payload->node_id = io_payload->node_id;
 
                 io_payload->node_quality = 0;
                 serial_payload->node_quality = io_payload->node_quality;
-// TODO serial number
-                io_payload->sequence_number = sequence_number; // TODO random number
+
+                io_payload->sequence_number = sequence_number;
                 serial_payload->sequence_number = io_payload->sequence_number;
 
-                io_payload->tos = tos; // TODO
+                io_payload->tos = tos;
                 serial_payload->tos = io_payload->tos;
+
+// TODO evaluate timestamp and time measuring
+                io_payload->timestamp_initial = (call Timer_Request.getNow() );  
+                serial_payload->timestamp_initial = io_payload->timestamp_initial;  
         }
-//b*/
+//*/
 
 
         /*
@@ -234,6 +241,9 @@ implementation
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
 
                         
+                setup_payload( io_payload, serial_payload, TOS_REQ );
+                
+/*
 // TODO put in create_packet( node_id, node_quality, sequence_number)
                 io_payload->node_id = TOS_NODE_ID;
                 serial_payload->node_id = io_payload->node_id;
@@ -251,6 +261,7 @@ implementation
 // TODO check
                 io_payload->timestamp_initial = (call Timer_Request.getNow() );  
                 serial_payload->timestamp_initial = io_payload->timestamp_initial;  
+//*/
 
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
