@@ -51,7 +51,9 @@ implementation
         message_t serial_pkt;
 
         // resend
-        bool is_already_resent_once = FALSE;
+// TODO rm
+//        bool is_already_resent_once = FALSE;
+        uint8_t number_of_resend = 0;
 
         // sequence_number
         uint16_t sequence_number = 0;
@@ -241,7 +243,7 @@ implementation
                    same as the local message buffer */
                 if( &pkt == msg ){
                         is_busy = FALSE;
-                        if( !is_already_resent_once ){
+                        if( 0 < number_of_resend ){
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }else{
 // TODO implement dropping
@@ -364,7 +366,7 @@ implementation
                 io_payload->timestamp_initial = (call Timer_Request.getNow() );  
                 serial_payload->timestamp_initial = io_payload->timestamp_initial;  
 //*/
-
+                number_of_resend = NUMBER_OF_RESEND;
                 send_packet(); // TODO test
 /*
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
@@ -391,7 +393,9 @@ implementation
 //*
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                        is_already_resent_once = TRUE;   
+// TODO rm
+//                        is_already_resent_once = TRUE;   
+                        number_of_resend--;
                         is_busy = TRUE;
                 }
 //*/

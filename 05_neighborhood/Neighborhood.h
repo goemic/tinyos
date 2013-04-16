@@ -13,6 +13,7 @@ enum{
         // timer
         PERIOD_REQUEST = 0,
         PERIOD_RESEND_TIMEOUT = 3000,
+        NUMBER_OF_RESEND = 3,
 
         // type of service
 // TODO, TCP codes and TOSes
