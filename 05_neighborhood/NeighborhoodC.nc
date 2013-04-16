@@ -51,8 +51,6 @@ implementation
         message_t serial_pkt;
 
         // resend
-// TODO rm
-//        bool is_already_resent_once = FALSE;
         uint8_t number_of_resend = 0;
 
         // sequence_number
@@ -205,10 +203,8 @@ implementation
         {
                 if( BUTTON_PRESSED == state ){
                         call Leds.led1On();
-
-// TODO                        
                         APPLICATION_link_quality();
-//                        call Timer_Request.startOneShot( PERIOD_REQUEST );
+                        call Leds.led1Off();
                 }
         }
 
@@ -244,6 +240,7 @@ implementation
                 if( &pkt == msg ){
                         is_busy = FALSE;
                         if( 0 < number_of_resend ){
+
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }else{
 // TODO implement dropping
@@ -267,11 +264,13 @@ implementation
                 io_payload = (ProtoMsg_t*) payload;
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
 
+/*
                 if( TOS_NODE_ID != io_payload->dst_node_id ){
                         DB_BEGIN "TODO: not for me" DB_END;
 // TODO handle forward
                         return NULL;
                 }
+//*/
 
                 if( TOS_NODE_ID == io_payload->src_node_id ){
                         // ERROR our node id
@@ -282,25 +281,22 @@ implementation
                 if( TOS_ACK == io_payload->tos ){
                         // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
-                        call Leds.led1Off();  
                         if( (sequence_number+1) != io_payload->sequence_number ){
                                 DB_BEGIN "ERROR: ACK with wrong sequence number received, dropped" DB_END;
                                 return NULL;
                         }
                         DB_BEGIN "\tsequence number ok" DB_END;
                         call Timer_Resend.stop();
-                        call Leds.led2Toggle();
 
                 }else if( TOS_REQ == io_payload->tos ){
                         // received REQ
                         DB_BEGIN "IiTzOk: REQ received" DB_END;
-                        call Leds.led0On();  
 
                         dst_node_id = io_payload->src_node_id;
 // TODO append node_id to neighbor node id list - snooping
 // TODO create neighbor node id list
 
-
+                        number_of_resend = 0;
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
 /*
                         // init ACK message to return
@@ -309,16 +305,18 @@ implementation
                         io_payload->sequence_number++;
 
                         io_payload->tos = TOS_ACK;
-//*/
+
+//*
                         send_packet(); // TODO test
-/*
+/*/
                         if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
-// TODO print out serial
-                                DB_BEGIN "\tconfirmed with ACK\n" DB_END;
+                                call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
                                 is_busy = TRUE;
                         }
 //*/
-                        call Leds.led0Off();  
+                        DB_BEGIN "\tconfirmed with ACK\n" DB_END;
+                        call Leds.led2Toggle();
+
                 }else{
                         // error
                         DB_BEGIN "ERROR: wrong message type" DB_END
@@ -388,14 +386,16 @@ implementation
                         return;
                 }
                 DB_BEGIN "resending packet" DB_END;
+//                number_of_resend--;  
 
+/*
                 send_packet(); // TODO test
-//*
+/*/
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
 // TODO rm
 //                        is_already_resent_once = TRUE;   
-                        number_of_resend--;
+                        number_of_resend--;  
                         is_busy = TRUE;
                 }
 //*/
