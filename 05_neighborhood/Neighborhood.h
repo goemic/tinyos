@@ -46,6 +46,18 @@ typedef nx_struct SerialMsg{
 } SerialMsg_t;
 
 
+
+// Neighborhood table
+typedef struct Neighborhood_s{
+        struct Neighborhood_s* next;
+        struct Neighborhood_s* prev;
+        uint8_t node_id;
+        uint8_t node_qualitiy;
+        // TODO
+} Neighborhood_t;
+typedef Neighborhood_t* Neighborhood_p;
+
+
 // DEBUGGING
 
 // printf warning turned off

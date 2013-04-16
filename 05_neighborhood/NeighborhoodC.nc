@@ -57,6 +57,66 @@ implementation
         uint16_t sequence_number = 0;
 
 
+// TODO convert into macrolist
+        // neighborhood protocol
+        Neighborhood_p nl_first = NULL;
+        Neighborhood_p nl_last = NULL;
+        uint16_t nl_size = 0;
+
+
+        Neighborhood_p neighborlist_find( uint8_t node_id )
+        {
+                uint8_t idx;
+                Neighborhood_p elem = nl_first;
+                for(idx=0; idx < nl_size; ++idx){
+                        if(node_id == elem->node_id){
+                                return elem;
+                        }
+                }
+                return NULL;
+        }
+
+        void neighborlist_add( Neighborhood_p entry )
+        {
+                if( !entry ){
+                        DB_BEGIN "ERROR: entry was NULL" DB_END;
+                        return;
+                }
+
+                nl_last = entry;
+                nl_size++;
+                if( !nl_first ){
+                        nl_first = nl_last;
+                }
+        }
+
+        void neighborlist_del( uint8_t node_id )
+        {
+                Neighborhood_p elem;
+                Neighborhood_p before;
+                Neighborhood_p after;
+                elem = neighborlist_find( node_id );
+                before = elem->prev;
+                after = elem->next;
+                before->next = after;
+                after->prev = before;
+                
+                // in case free element here
+        }
+
+        uint16_t neighborlist_size()
+        {
+                return nl_size;
+        }
+
+        void neighborlist_show()
+        {
+                
+        }
+
+
+
+
         /*
           FUNCTIONS
         */
