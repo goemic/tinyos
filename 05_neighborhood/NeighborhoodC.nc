@@ -56,13 +56,15 @@ implementation
         // sequence_number
         uint16_t sequence_number = 0;
 
+        /*
+          LIST
+         */
 
 // TODO convert into macrolist
         // neighborhood protocol
         Neighborhood_p nl_first = NULL;
         Neighborhood_p nl_last = NULL;
         uint16_t nl_size = 0;
-
 
         Neighborhood_p neighborlist_find( uint8_t node_id )
         {
@@ -111,33 +113,33 @@ implementation
 
         void neighborlist_show()
         {
-                
+                DB_BEGIN "TODO print the list information" DB_END;
         }
-
-
 
 
         /*
           FUNCTIONS
         */
-/*
+//*
         // measure link quality to a specified node
         //
         // this means
         // - send time
         // - response time
         // - send failure (resends) or unreachable (timeout)
-        void APPLICATION_link_quality( uint16_t node_id )
+        void APPLICATION_link_quality()
         {
+
+                call Timer_Request.startOneShot( PERIOD_REQUEST );
                 // send like three pings
                 // TODO
                 // measure send time
                 // measure return time
                 // measure resends
                 // measure failures
-                ;
+// TODO
+// XXX
         }
-
 //*/
 
 //*
@@ -201,7 +203,10 @@ implementation
         {
                 if( BUTTON_PRESSED == state ){
                         call Leds.led1On();
-                        call Timer_Request.startOneShot( PERIOD_REQUEST );
+
+// TODO                        
+                        APPLICATION_link_quality();
+//                        call Timer_Request.startOneShot( PERIOD_REQUEST );
                 }
         }
 
