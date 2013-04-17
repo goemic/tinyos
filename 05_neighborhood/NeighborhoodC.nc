@@ -167,11 +167,12 @@ implementation
         }
 //*/
 
-        void send_packet()
+        void send_packet( message_t* message )
         {
-                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
+//                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){  
+                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, message, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( SerialMsg_t ));
-                        DB_BEGIN "send request" DB_END;
+                        DB_BEGIN "send packet" DB_END;
                         is_busy = TRUE;
                 }
         }
@@ -253,9 +254,6 @@ implementation
                 }
 
                 // obtain payload
-//*
-                io_payload = (ProtoMsg_t*) (call Packet.getPayload( &msg, sizeof( ProtoMsg_t )));
-/*/
                 io_payload = (ProtoMsg_t*) payload;
 //*/
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
@@ -266,7 +264,7 @@ implementation
                 DB_BEGIN "sequence_number\t\t%u", io_payload->sequence_number DB_END;
                 DB_BEGIN "tos\t\t\t%u", io_payload->tos DB_END;
                 DB_BEGIN "timestamp_initial\t%u", io_payload->timestamp_initial DB_END;
-                DB_BEGIN "" DB_END;
+                DB_BEGIN " " DB_END;
                 
 //*/
 
@@ -311,8 +309,29 @@ implementation
 // TODO create neighbor node id list
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
                         number_of_resend = 0;
-                        send_packet();
+//*
+                        send_packet( msg );
+/*/
+//                        io_payload->src_node_id = TOS_NODE_ID;
+//                serial_payload->src_node_id = io_payload->src_node_id;
 
+//                        io_payload->dst_node_id = dst_node_id;
+//                serial_payload->dst_node_id = io_payload->dst_node_id;
+
+                        io_payload->sequence_number = ++sequence_number;
+//                serial_payload->sequence_number = io_payload->sequence_number;
+
+                        io_payload->tos = TOS_ACK;
+//                serial_payload->tos = io_payload->tos;
+
+// TODO evaluate timestamp and time measuring
+                io_payload->timestamp_initial = (call Timer_Request.getNow() );  
+//                serial_payload->timestamp_initial = io_payload->timestamp_initial;  
+
+                        if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
+                                is_busy = TRUE;
+                        }
+//*/
                         DB_BEGIN "\tconfirmed with ACK\n" DB_END;
                         call Leds.led2Toggle();
 
@@ -344,7 +363,7 @@ implementation
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
                 setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ );
                 number_of_resend = NUMBER_OF_RESEND;
-                send_packet();
+                send_packet((message_t*) &pkt);
         }
 
         event void Timer_Resend.fired()
@@ -360,7 +379,7 @@ implementation
                 DB_BEGIN "resending packet" DB_END;
 //*
                 number_of_resend--;  
-                send_packet(); // TODO test
+                send_packet((message_t*) &pkt); // TODO test
 /*/
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
                         call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
