@@ -155,11 +155,11 @@ implementation
                 io_payload->dst_node_id = dst_node_id;
                 serial_payload->dst_node_id = io_payload->dst_node_id;
 
-                io_payload->sequence_number = sequence_number;
+                io_payload->sequence_number = ++sequence_number;
                 serial_payload->sequence_number = io_payload->sequence_number;
 
                 io_payload->tos = tos;
-                DB_BEGIN "setup_payload::tos = %d", io_payload->tos DB_END;  
+                DB_BEGIN "setup_payload::tos = %u", io_payload->tos DB_END;  
                 serial_payload->tos = io_payload->tos;
 
 // TODO evaluate timestamp and time measuring
@@ -234,7 +234,7 @@ implementation
                 if( &pkt == msg ){
                         is_busy = FALSE;
                         if( 0 < number_of_resend ){
-                                DB_BEGIN "resend %d", number_of_resend DB_END;
+                                DB_BEGIN "resend %u", number_of_resend DB_END;
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }else{
 // TODO implement dropping
@@ -257,6 +257,16 @@ implementation
                 // obtain payload
                 io_payload = (ProtoMsg_t*) payload;
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
+/*                
+                DB_BEGIN "received:" DB_END;
+                DB_BEGIN "src_node_id\t\t%u", io_payload->src_node_id DB_END;
+                DB_BEGIN "dst_node_id\t\t%u", io_payload->dst_node_id DB_END;
+                DB_BEGIN "sequence_number\t%u", io_payload->sequence_number DB_END;
+                DB_BEGIN "tos\t\t\t%u", io_payload->tos DB_END;
+                DB_BEGIN "timestamp_initial\t%u", io_payload->timestamp_initial DB_END;
+                DB_BEGIN "" DB_END;
+                
+*/
 
 /*
                 if( TOS_NODE_ID != io_payload->dst_node_id ){
@@ -274,7 +284,7 @@ implementation
 
 // XXX
 // FIXME: why becomes this tos 0?
-                DB_BEGIN "tos = %d", io_payload->tos DB_END;  
+//                DB_BEGIN "tos = %u", io_payload->tos DB_END;  
 
                 if( TOS_ACK == (uint8_t) io_payload->tos ){
                         // received ACK
@@ -285,6 +295,7 @@ implementation
                                 return NULL;
                         }
                         DB_BEGIN "\tsequence number ok" DB_END;
+                        sequence_number = io_payload->sequence_number;
                         call Timer_Resend.stop();
                         call Leds.led1Off();
 
@@ -292,11 +303,20 @@ implementation
                         // received REQ - send ACK
                         DB_BEGIN "IiTzOk: REQ received" DB_END;
                         number_of_resend = 0;
-
+                        sequence_number = io_payload->sequence_number;
                         dst_node_id = io_payload->src_node_id;
 // TODO append node_id to neighbor node id list - snooping
 // TODO create neighbor node id list
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
+                        
+                DB_BEGIN "sending:" DB_END;
+                DB_BEGIN "src_node_id\t\t%u", io_payload->src_node_id DB_END;
+                DB_BEGIN "dst_node_id\t\t%u", io_payload->dst_node_id DB_END;
+                DB_BEGIN "sequence_number\t%u", io_payload->sequence_number DB_END;
+                DB_BEGIN "tos\t\t\t%u", io_payload->tos DB_END;
+                DB_BEGIN "timestamp_initial\t%u", io_payload->timestamp_initial DB_END;
+                DB_BEGIN "" DB_END;
+                
                         send_packet();
                         DB_BEGIN "\tconfirmed with ACK\n" DB_END;
                         call Leds.led2Toggle();
