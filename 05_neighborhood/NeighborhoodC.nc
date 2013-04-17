@@ -239,7 +239,7 @@ implementation
                 /* check to ensure the message buffer that was signaled is the
                    same as the local message buffer */
                 if( &pkt == msg ){
-                        is_busy = FALSE;
+//                        is_busy = FALSE;   
                         if( 0 < number_of_resend ){
                                 DB_BEGIN "resend %u", number_of_resend DB_END;
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
@@ -247,6 +247,7 @@ implementation
 // TODO implement dropping
                                 DB_BEGIN "dropped" DB_END;
                         }
+                        is_busy = FALSE;
                 }
         }
 
@@ -320,8 +321,9 @@ implementation
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
                         number_of_resend = 0;
 
+                        DB_BEGIN "\tconfirm with ACK\n" DB_END;
                         send_packet( msg );
-                        DB_BEGIN "\tconfirmed with ACK\n" DB_END;
+
                         call Leds.led2Toggle();
 
                 }else{
