@@ -171,7 +171,7 @@ implementation
         void send_packet()
         {
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
-                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
+                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( SerialMsg_t ));
                         DB_BEGIN "send request" DB_END;
                         is_busy = TRUE;
                 }
@@ -255,9 +255,13 @@ implementation
                 }
 
                 // obtain payload
+/*
+                io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
+/*/
                 io_payload = (ProtoMsg_t*) payload;
+//*/
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
-/*                
+//*                
                 DB_BEGIN "received:" DB_END;
                 DB_BEGIN "src_node_id\t\t%u", io_payload->src_node_id DB_END;
                 DB_BEGIN "dst_node_id\t\t%u", io_payload->dst_node_id DB_END;
@@ -266,7 +270,7 @@ implementation
                 DB_BEGIN "timestamp_initial\t%u", io_payload->timestamp_initial DB_END;
                 DB_BEGIN "" DB_END;
                 
-*/
+//*/
 
 /*
                 if( TOS_NODE_ID != io_payload->dst_node_id ){
@@ -286,9 +290,9 @@ implementation
 // FIXME: why becomes this tos 0?
 //                DB_BEGIN "tos = %u", io_payload->tos DB_END;  
 
-                if( TOS_ACK == (uint8_t) io_payload->tos ){
+                if( TOS_ACK == io_payload->tos ){
                         // received ACK
-                        DB_BEGIN "IiTzOk: ACK received" DB_END;
+                        DB_BEGIN "ACK received" DB_END;
                         number_of_resend = 0;
                         if( (sequence_number+1) != io_payload->sequence_number ){
                                 DB_BEGIN "ERROR: ACK with wrong sequence number received, dropped" DB_END;
@@ -299,25 +303,18 @@ implementation
                         call Timer_Resend.stop();
                         call Leds.led1Off();
 
-                }else if( TOS_REQ == (uint8_t) io_payload->tos ){
+                }else if( TOS_REQ == io_payload->tos ){
                         // received REQ - send ACK
-                        DB_BEGIN "IiTzOk: REQ received" DB_END;
-                        number_of_resend = 0;
+                        DB_BEGIN "REQ received" DB_END;
+
                         sequence_number = io_payload->sequence_number;
                         dst_node_id = io_payload->src_node_id;
 // TODO append node_id to neighbor node id list - snooping
 // TODO create neighbor node id list
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
-                        
-                DB_BEGIN "sending:" DB_END;
-                DB_BEGIN "src_node_id\t\t%u", io_payload->src_node_id DB_END;
-                DB_BEGIN "dst_node_id\t\t%u", io_payload->dst_node_id DB_END;
-                DB_BEGIN "sequence_number\t%u", io_payload->sequence_number DB_END;
-                DB_BEGIN "tos\t\t\t%u", io_payload->tos DB_END;
-                DB_BEGIN "timestamp_initial\t%u", io_payload->timestamp_initial DB_END;
-                DB_BEGIN "" DB_END;
-                
+                        number_of_resend = 0;
                         send_packet();
+
                         DB_BEGIN "\tconfirmed with ACK\n" DB_END;
                         call Leds.led2Toggle();
 
@@ -346,7 +343,7 @@ implementation
                 if( is_busy ) return;
 
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
-                serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
+                serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
                 setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ );
                 number_of_resend = NUMBER_OF_RESEND;
                 send_packet();
