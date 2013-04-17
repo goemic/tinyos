@@ -129,8 +129,14 @@ implementation
         // - send failure (resends) or unreachable (timeout)
         void APPLICATION_link_quality()
         {
-
+                DB_BEGIN "APPLICATION_link_quality()" DB_END;  
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
+/*
+                call Timer_Request.startOneShot( PERIOD_REQUEST );
+                call Timer_Request.startOneShot( PERIOD_REQUEST );
+                call Timer_Request.startOneShot( PERIOD_REQUEST );
+                call Timer_Request.startOneShot( PERIOD_REQUEST );
+//*/
                 // send like three pings
                 // TODO
                 // measure send time
@@ -197,6 +203,7 @@ implementation
         event void Notify.notify( button_state_t state )
         {
                 if( BUTTON_PRESSED == state ){
+                        DB_BEGIN "button pressed" DB_END;
                         call Leds.led1On();
                         APPLICATION_link_quality();
                 }
@@ -296,6 +303,9 @@ implementation
                         }
                         DB_BEGIN "\tsequence number ok" DB_END;
                         sequence_number = io_payload->sequence_number;
+
+                        
+
                         call Timer_Resend.stop();
                         call Leds.led1Off();
 
@@ -309,29 +319,8 @@ implementation
 // TODO create neighbor node id list
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
                         number_of_resend = 0;
-//*
+
                         send_packet( msg );
-/*/
-//                        io_payload->src_node_id = TOS_NODE_ID;
-//                serial_payload->src_node_id = io_payload->src_node_id;
-
-//                        io_payload->dst_node_id = dst_node_id;
-//                serial_payload->dst_node_id = io_payload->dst_node_id;
-
-                        io_payload->sequence_number = ++sequence_number;
-//                serial_payload->sequence_number = io_payload->sequence_number;
-
-                        io_payload->tos = TOS_ACK;
-//                serial_payload->tos = io_payload->tos;
-
-// TODO evaluate timestamp and time measuring
-                io_payload->timestamp_initial = (call Timer_Request.getNow() );  
-//                serial_payload->timestamp_initial = io_payload->timestamp_initial;  
-
-                        if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
-                                is_busy = TRUE;
-                        }
-//*/
                         DB_BEGIN "\tconfirmed with ACK\n" DB_END;
                         call Leds.led2Toggle();
 
@@ -357,7 +346,10 @@ implementation
                 SerialMsg_t* serial_payload = NULL;
                 uint8_t dst_node_id = 2;
 
-                if( is_busy ) return;
+                if( is_busy ){
+                        DB_BEGIN "WARNING: is busy" DB_END;  
+                        return;
+                }
 
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
@@ -377,17 +369,7 @@ implementation
                         return;
                 }
                 DB_BEGIN "resending packet" DB_END;
-//*
                 number_of_resend--;  
                 send_packet((message_t*) &pkt); // TODO test
-/*/
-                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
-                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-// TODO rm
-//                        is_already_resent_once = TRUE;   
-                        number_of_resend--;  
-                        is_busy = TRUE;
-                }
-//*/
         }
 }
