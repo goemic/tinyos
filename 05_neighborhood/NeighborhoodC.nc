@@ -138,7 +138,6 @@ implementation
                 // measure resends
                 // measure failures
 // TODO
-// XXX
         }
 //*/
 
@@ -185,7 +184,6 @@ implementation
 
         event void Boot.booted()
         {
-//                APPLICATION_link_quality( 2 );
                 call AMControl.start();
                 call SerialAMControl.start();
                 call Notify.enable();
@@ -274,6 +272,8 @@ implementation
                         return NULL;
                 }
 
+// XXX
+// FIXME: why becomes this tos 0?
                 DB_BEGIN "tos = %d", io_payload->tos DB_END;  
 
                 if( TOS_ACK == (uint8_t) io_payload->tos ){
@@ -327,38 +327,9 @@ implementation
 
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &pkt, sizeof( SerialMsg_t )));
-
-                
-
-                setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ ); // TODO test   
-/*
-// TODO put in create_packet( node_id, node_quality, sequence_number)
-                io_payload->node_id = TOS_NODE_ID;
-                serial_payload->node_id = io_payload->node_id;
-
-                io_payload->node_quality = 0;  
-                serial_payload->node_quality = io_payload->node_quality;  
-// TODO serial number
-                io_payload->sequence_number = sequence_number; // TODO random number
-                serial_payload->sequence_number = io_payload->sequence_number;
-
-                io_payload->tos = TOS_REQ; // TODO
-                serial_payload->tos = io_payload->tos;
-
-                // performance measuring (first approach)
-// TODO check
-                io_payload->timestamp_initial = (call Timer_Request.getNow() );  
-                serial_payload->timestamp_initial = io_payload->timestamp_initial;  
-//*/
+                setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ );
                 number_of_resend = NUMBER_OF_RESEND;
-                send_packet(); // TODO test
-/*
-                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
-                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                        DB_BEGIN "send request" DB_END;
-                        is_busy = TRUE;
-                }
-//*/
+                send_packet();
         }
 
         event void Timer_Resend.fired()
@@ -372,9 +343,8 @@ implementation
                         return;
                 }
                 DB_BEGIN "resending packet" DB_END;
-//                number_of_resend--;  
-
-/*
+//*
+                number_of_resend--;  
                 send_packet(); // TODO test
 /*/
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){
