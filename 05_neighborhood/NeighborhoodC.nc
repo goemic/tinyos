@@ -177,9 +177,10 @@ implementation
         {
 //                if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, (message_t*) &pkt, sizeof( ProtoMsg_t )))){  
                 if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, message, sizeof( ProtoMsg_t )))){
-                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( SerialMsg_t ));
-                        DB_BEGIN "send packet" DB_END;
                         is_busy = TRUE;
+                        DB_BEGIN "XXX - isbusy to TRUE: %d", is_busy DB_END;   
+                        DB_BEGIN "send packet" DB_END;
+                        call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( SerialMsg_t ));
                 }
         }
 
@@ -240,6 +241,13 @@ implementation
                    same as the local message buffer */
                 if( &pkt == msg ){
 //                        is_busy = FALSE;   
+
+
+                        is_busy = FALSE;  
+                        DB_BEGIN "XXX - isbusy to FALSE: %d", is_busy DB_END;   
+
+
+
                         if( 0 < number_of_resend ){
                                 DB_BEGIN "resend %u", number_of_resend DB_END;
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
@@ -247,7 +255,6 @@ implementation
 // TODO implement dropping
                                 DB_BEGIN "dropped" DB_END;
                         }
-                        is_busy = FALSE;
                 }
         }
 
@@ -262,7 +269,8 @@ implementation
                 }
 
                 // obtain payload
-                io_payload = (ProtoMsg_t*) payload;
+//                io_payload = (ProtoMsg_t*) payload;
+                io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
 //*/
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
 //*                
@@ -284,47 +292,56 @@ implementation
                 }
 //*/
 
-                if( TOS_NODE_ID == io_payload->src_node_id ){
+//                if( TOS_NODE_ID == io_payload->src_node_id ){
+                if( TOS_NODE_ID == ((ProtoMsg_t*) payload)->src_node_id ){ 
                         // ERROR our node id
                         DB_BEGIN "ERROR: received own src_node_id" DB_END;
                         return NULL;
                 }
 
-// XXX
-// FIXME: why becomes this tos 0?
 //                DB_BEGIN "tos = %u", io_payload->tos DB_END;  
 
-                if( TOS_ACK == io_payload->tos ){
+//                if( TOS_ACK == io_payload->tos ){
+                if( TOS_ACK == ((ProtoMsg_t*) payload)->tos ){ 
                         // received ACK
                         DB_BEGIN "ACK received" DB_END;
                         number_of_resend = 0;
-                        if( (sequence_number+1) != io_payload->sequence_number ){
+//                        if( (sequence_number+1) != io_payload->sequence_number ){
+                        if( (sequence_number+1) != ((ProtoMsg_t*) payload)->sequence_number ){
                                 DB_BEGIN "ERROR: ACK with wrong sequence number received, dropped" DB_END;
                                 return NULL;
                         }
                         DB_BEGIN "\tsequence number ok" DB_END;
-                        sequence_number = io_payload->sequence_number;
+//                        sequence_number = io_payload->sequence_number;
+                        sequence_number = ((ProtoMsg_t*) payload)->sequence_number;
 
                         
-
+// TODO create neighbor node id list
+// TODO append node_id to neighbor node id list - snooping
                         call Timer_Resend.stop();
                         call Leds.led1Off();
 
-                }else if( TOS_REQ == io_payload->tos ){
+//                }else if( TOS_REQ == io_payload->tos ){
+                }else if( TOS_REQ == ((ProtoMsg_t*) payload)->tos ){
                         // received REQ - send ACK
                         DB_BEGIN "REQ received" DB_END;
 
-                        sequence_number = io_payload->sequence_number;
-                        dst_node_id = io_payload->src_node_id;
-// TODO append node_id to neighbor node id list - snooping
-// TODO create neighbor node id list
+//                        sequence_number = io_payload->sequence_number;
+                        sequence_number = ((ProtoMsg_t*) payload)->sequence_number;
+//                        dst_node_id = io_payload->src_node_id;
+                        dst_node_id = ((ProtoMsg_t*) payload)->src_node_id;
+
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
                         number_of_resend = 0;
 
                         DB_BEGIN "\tconfirm with ACK\n" DB_END;
-                        send_packet( msg );
+                        
+                        // set payload to pkt
+//                        send_packet( msg );
+                        send_packet( (message_t*) &pkt );
 
                         call Leds.led2Toggle();
+                        return &pkt;
 
                 }else{
                         // error
