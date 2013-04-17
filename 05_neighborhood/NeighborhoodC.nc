@@ -159,7 +159,6 @@ implementation
                 serial_payload->sequence_number = io_payload->sequence_number;
 
                 io_payload->tos = tos;
-                DB_BEGIN "setup_payload::tos = %u", io_payload->tos DB_END;  
                 serial_payload->tos = io_payload->tos;
 
 // TODO evaluate timestamp and time measuring
@@ -240,7 +239,6 @@ implementation
 // TODO implement dropping
                                 DB_BEGIN "dropped" DB_END;
                         }
-// TODO clean message
                 }
         }
 
@@ -255,8 +253,8 @@ implementation
                 }
 
                 // obtain payload
-/*
-                io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
+//*
+                io_payload = (ProtoMsg_t*) (call Packet.getPayload( &msg, sizeof( ProtoMsg_t )));
 /*/
                 io_payload = (ProtoMsg_t*) payload;
 //*/
@@ -265,7 +263,7 @@ implementation
                 DB_BEGIN "received:" DB_END;
                 DB_BEGIN "src_node_id\t\t%u", io_payload->src_node_id DB_END;
                 DB_BEGIN "dst_node_id\t\t%u", io_payload->dst_node_id DB_END;
-                DB_BEGIN "sequence_number\t%u", io_payload->sequence_number DB_END;
+                DB_BEGIN "sequence_number\t\t%u", io_payload->sequence_number DB_END;
                 DB_BEGIN "tos\t\t\t%u", io_payload->tos DB_END;
                 DB_BEGIN "timestamp_initial\t%u", io_payload->timestamp_initial DB_END;
                 DB_BEGIN "" DB_END;
