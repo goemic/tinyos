@@ -27,23 +27,18 @@ enum{
 typedef nx_struct ProtoMsg{
         nx_uint8_t src_node_id;
         nx_uint8_t dst_node_id;
-        nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
-// TODO measure "performance" ???
         nx_uint16_t timestamp_initial;  
-//        nx_uint16_t timestamp_acked;  
 } ProtoMsg_t;
 
 // serial message payload
 typedef nx_struct SerialMsg{
         nx_uint8_t src_node_id;
         nx_uint8_t dst_node_id;
-        nx_uint16_t node_quality;
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
         nx_uint16_t timestamp_initial;  
-//        nx_uint16_t timestamp_acked;  
 } SerialMsg_t;
 
 

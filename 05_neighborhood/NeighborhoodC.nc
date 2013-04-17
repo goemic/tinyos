@@ -156,14 +156,11 @@ implementation
                 io_payload->dst_node_id = dst_node_id;
                 serial_payload->dst_node_id = io_payload->dst_node_id;
 
-// TODO do we need this?
-                io_payload->node_quality = 0;
-                serial_payload->node_quality = io_payload->node_quality;
-
                 io_payload->sequence_number = sequence_number;
                 serial_payload->sequence_number = io_payload->sequence_number;
 
                 io_payload->tos = tos;
+                DB_BEGIN "setup_payload::tos = %d", io_payload->tos DB_END;  
                 serial_payload->tos = io_payload->tos;
 
 // TODO evaluate timestamp and time measuring
@@ -204,7 +201,6 @@ implementation
                 if( BUTTON_PRESSED == state ){
                         call Leds.led1On();
                         APPLICATION_link_quality();
-                        call Leds.led1Off();
                 }
         }
 
@@ -240,7 +236,7 @@ implementation
                 if( &pkt == msg ){
                         is_busy = FALSE;
                         if( 0 < number_of_resend ){
-
+                                DB_BEGIN "resend %d", number_of_resend DB_END;
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }else{
 // TODO implement dropping
@@ -278,48 +274,38 @@ implementation
                         return NULL;
                 }
 
-                if( TOS_ACK == io_payload->tos ){
+                DB_BEGIN "tos = %d", io_payload->tos DB_END;  
+
+                if( TOS_ACK == (uint8_t) io_payload->tos ){
                         // received ACK
                         DB_BEGIN "IiTzOk: ACK received" DB_END;
+                        number_of_resend = 0;
                         if( (sequence_number+1) != io_payload->sequence_number ){
                                 DB_BEGIN "ERROR: ACK with wrong sequence number received, dropped" DB_END;
                                 return NULL;
                         }
                         DB_BEGIN "\tsequence number ok" DB_END;
                         call Timer_Resend.stop();
+                        call Leds.led1Off();
 
-                }else if( TOS_REQ == io_payload->tos ){
-                        // received REQ
+                }else if( TOS_REQ == (uint8_t) io_payload->tos ){
+                        // received REQ - send ACK
                         DB_BEGIN "IiTzOk: REQ received" DB_END;
+                        number_of_resend = 0;
 
                         dst_node_id = io_payload->src_node_id;
 // TODO append node_id to neighbor node id list - snooping
 // TODO create neighbor node id list
-
-                        number_of_resend = 0;
                         setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
-/*
-                        // init ACK message to return
-                        io_payload->src_node_id = TOS_NODE_ID;
-
-                        io_payload->sequence_number++;
-
-                        io_payload->tos = TOS_ACK;
-
-//*
-                        send_packet(); // TODO test
-/*/
-                        if( SUCCESS == (call AMSend.send( AM_BROADCAST_ADDR, msg, sizeof( ProtoMsg_t ))) ){
-                                call SerialAMSend.send( AM_BROADCAST_ADDR, (message_t*) &serial_pkt, sizeof( ProtoMsg_t ));
-                                is_busy = TRUE;
-                        }
-//*/
+                        send_packet();
                         DB_BEGIN "\tconfirmed with ACK\n" DB_END;
                         call Leds.led2Toggle();
 
                 }else{
                         // error
                         DB_BEGIN "ERROR: wrong message type" DB_END
+                        call Timer_Resend.stop();
+                        call Leds.led1Off();
                 }
 
                 return msg;
