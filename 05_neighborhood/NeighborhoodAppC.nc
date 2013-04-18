@@ -50,6 +50,9 @@ implementation
         App.Get -> UserButtonC;
         App.Notify -> UserButtonC;
 
+        components new QueueC( Neighborhood_t*, sizeof( Neighborhood_t* ) );
+        App.Neighborhood_list -> QueueC;
+
         // debugging
         components PrintfC;
         components SerialStartC;

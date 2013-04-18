@@ -40,8 +40,7 @@ module NeighborhoodC
         uses interface Notify<button_state_t>;
 
         // queue
-// TODO
-//        uses interface Queue<Neighborhood_t> as Neighbor_list;
+        uses interface Queue<Neighborhood_t*> as Neighborhood_list;
 }
 implementation
 {
@@ -65,14 +64,30 @@ implementation
          */
 
 // TODO convert into macrolist
+//*
         // neighborhood protocol
-        Neighborhood_p nl_first = NULL;
-        Neighborhood_p nl_last = NULL;
+        Neighborhood_t* nl_first = NULL;
+        Neighborhood_t* nl_last = NULL;
         uint16_t nl_size = 0;
+//*/
+
 
         Neighborhood_p neighborlist_find( uint8_t node_id )
         {
-                uint8_t idx;
+                uint8_t idx = 0;
+                Neighborhood_p elem = NULL;
+                uint8_t size = 0;
+
+                size = (call Neighborhood_list.size());
+                for( idx=0; idx<size; ++idx ){
+                        elem = (call Neighborhood_list.element( idx ));
+                        if( node_id == elem->node_id ){
+                                return elem;
+                        }
+                }
+                return NULL;
+/*
+  // TODO rm
                 Neighborhood_p elem = nl_first;
                 for(idx=0; idx < nl_size; ++idx){
                         if(node_id == elem->node_id){
@@ -80,10 +95,27 @@ implementation
                         }
                 }
                 return NULL;
+//*/
         }
 
         void neighborlist_add( Neighborhood_t *entry )
         {
+
+//                DB_BEGIN "XXX maxsize %u", (uint8_t) (call Neighborhood_list.maxSize()) DB_END;
+                if( SUCCESS != (call Neighborhood_list.enqueue(entry))){
+                        DB_BEGIN "ERROR: could not queue element" DB_END;
+                        return;
+                }
+
+                DB_BEGIN "XXX size %u", (uint8_t) (call Neighborhood_list.size()) DB_END;
+
+
+
+
+/*           
+                Neighborhood_t test;
+                DB_BEGIN "test %u", (uint16_t) &test DB_END;
+
                 DB_BEGIN "neighborlist_add()" DB_END;   
                 if( !entry ){
                         DB_BEGIN "ERROR: entry was NULL" DB_END;
@@ -91,29 +123,34 @@ implementation
                 }
 
                 DB_BEGIN "before" DB_END;  
-/*
-                DB_BEGIN "\tnl_last->node_id\t%u", (uint16_t) nl_last->node_id DB_END;  
-                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
-                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
-                DB_BEGIN "\tentry->node_id\t\t%u", (uint16_t) entry->node_id DB_END;  
-                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
+
+//                DB_BEGIN "\tnl_last->node_id\t%u", (uint16_t) nl_last->node_id DB_END;  
+//                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
+//                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
+//                DB_BEGIN "\tentry->node_id\t\t%u", (uint16_t) entry->node_id DB_END;  
+//                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
                 DB_BEGIN "\tentry\t\t\t%u", (uint16_t) entry DB_END;  
-//*/
-                DB_BEGIN "\tentry->next\t%u", (uint16_t) entry->next DB_END;  
-                DB_BEGIN "\tnl_last->next\t%u", (uint16_t) nl_last->next DB_END;  
+
+                DB_BEGIN "\tentry->next\t\t%u", (uint16_t) entry->next DB_END;  
+                DB_BEGIN "\tnl_last->next\t\t%u", (uint16_t) nl_last->next DB_END;  
 
                 DB_BEGIN "assignment" DB_END;
+
+                
+
 //                if( !nl_last ){ // TODO check both
                 if( 0 == nl_size ){
+                        DB_BEGIN "list was empty" DB_END;
                         // list was empty
-                        *nl_first = *entry;
+                        nl_first = entry;
                 }else{
+                        DB_BEGIN "append to list" DB_END;
                         // already contains elements
-                        nl_last->next = entry;
-                        DB_BEGIN "\tnl_last->next\t\t%u", (uint16_t) nl_last->next DB_END;  
+                        *nl_last->next = *entry;
+                        DB_BEGIN "\tnl_last->next\t%u", (uint16_t) nl_last->next DB_END;  
 
-                        entry->prev = nl_last;
-                        DB_BEGIN "\tentry->prev\t\t%u", (uint16_t) entry->prev DB_END;  
+                        *entry->prev = *nl_last;
+                        DB_BEGIN "\tentry->prev\t%u", (uint16_t) entry->prev DB_END;  
                 }
                 // set nl_last
                 nl_last = entry;
@@ -121,26 +158,33 @@ implementation
                 // just make sure...
                 nl_last->next = NULL;
                 nl_first->prev = NULL;
-/*
+
                 DB_BEGIN "after" DB_END;  
+
+                DB_BEGIN "\tnl_first->node_id\t%u", (uint16_t) nl_first->node_id DB_END;  
                 DB_BEGIN "\tnl_last->node_id\t%u", (uint16_t) nl_last->node_id DB_END;  
-                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
-                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
                 DB_BEGIN "\tentry->node_id\t\t%u", (uint16_t) entry->node_id DB_END;  
-                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
+
+//                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
                 DB_BEGIN "\tentry\t\t\t%u", (uint16_t) entry DB_END;  
-//*/
+
+//                DB_BEGIN "\t&nl_first\t\t%u", (uint16_t) &nl_first DB_END;  
+                DB_BEGIN "\tnl_first\t\t%u", (uint16_t) nl_first DB_END;  
+
+//                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
+                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
+
                 DB_BEGIN "\tentry->next\t%u", (uint16_t) entry->next DB_END;  
                 DB_BEGIN "\tentry->prev\t%u", (uint16_t) entry->prev DB_END;  
-
                 DB_BEGIN "\tnl_last->next\t%u", (uint16_t) nl_last->next DB_END;  
                 DB_BEGIN "\tnl_last->prev\t%u", (uint16_t) nl_last->prev DB_END;  
-
                 DB_BEGIN "\tnl_first->next\t%u", (uint16_t) nl_first->next DB_END;  
                 DB_BEGIN "\tnl_first->prev\t%u", (uint16_t) nl_first->prev DB_END;  
 
                 nl_size++;
+//*/
         }
+
 
         void neighborlist_del( uint8_t node_id )
         {
@@ -383,6 +427,7 @@ implementation
 
                         
                         item.node_id = ((ProtoMsg_t*) payload)->src_node_id;
+                        item.node_id++;   
                         item.next = NULL;
                         DB_BEGIN "XXX item.next\t%u", (uint16_t) item.next DB_END;   
                         item.prev = NULL;
