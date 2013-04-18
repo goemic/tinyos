@@ -63,15 +63,6 @@ implementation
           LIST
          */
 
-// TODO convert into macrolist
-//*
-        // neighborhood protocol
-        Neighborhood_t* nl_first = NULL;
-        Neighborhood_t* nl_last = NULL;
-        uint16_t nl_size = 0;
-//*/
-
-
         Neighborhood_p neighborlist_find( uint8_t node_id )
         {
                 uint8_t idx = 0;
@@ -86,161 +77,47 @@ implementation
                         }
                 }
                 return NULL;
-/*
-  // TODO rm
-                Neighborhood_p elem = nl_first;
-                for(idx=0; idx < nl_size; ++idx){
-                        if(node_id == elem->node_id){
-                                return elem;
-                        }
-                }
-                return NULL;
-//*/
         }
 
         void neighborlist_add( Neighborhood_t *entry )
         {
+//                DB_BEGIN "maxsize %u", (uint8_t) (call Neighborhood_list.maxSize()) DB_END;
+                DB_BEGIN "neighborlist_add( Neighborhood_t *entry )" DB_END;
+                if( NULL == neighborlist_find( entry->node_id ) ){
+                        DB_BEGIN "\tnew neighbor found" DB_END;
 
-//                DB_BEGIN "XXX maxsize %u", (uint8_t) (call Neighborhood_list.maxSize()) DB_END;
-                if( SUCCESS != (call Neighborhood_list.enqueue(entry))){
-                        DB_BEGIN "ERROR: could not queue element" DB_END;
-                        return;
-                }
+                        // check size
+                        if( (call Neighborhood_list.maxSize()) <= (call Neighborhood_list.size()) ){
+                                DB_BEGIN "ERROR: list is full" DB_END;
+                                return;
+                        }
 
-                DB_BEGIN "XXX size %u", (uint8_t) (call Neighborhood_list.size()) DB_END;
-
-
-
-
-/*           
-                Neighborhood_t test;
-                DB_BEGIN "test %u", (uint16_t) &test DB_END;
-
-                DB_BEGIN "neighborlist_add()" DB_END;   
-                if( !entry ){
-                        DB_BEGIN "ERROR: entry was NULL" DB_END;
-                        return;
-                }
-
-                DB_BEGIN "before" DB_END;  
-
-//                DB_BEGIN "\tnl_last->node_id\t%u", (uint16_t) nl_last->node_id DB_END;  
-//                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
-//                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
-//                DB_BEGIN "\tentry->node_id\t\t%u", (uint16_t) entry->node_id DB_END;  
-//                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
-                DB_BEGIN "\tentry\t\t\t%u", (uint16_t) entry DB_END;  
-
-                DB_BEGIN "\tentry->next\t\t%u", (uint16_t) entry->next DB_END;  
-                DB_BEGIN "\tnl_last->next\t\t%u", (uint16_t) nl_last->next DB_END;  
-
-                DB_BEGIN "assignment" DB_END;
-
-                
-
-//                if( !nl_last ){ // TODO check both
-                if( 0 == nl_size ){
-                        DB_BEGIN "list was empty" DB_END;
-                        // list was empty
-                        nl_first = entry;
+                        // append
+                        if( SUCCESS != (call Neighborhood_list.enqueue(entry))){
+                                DB_BEGIN "ERROR: could not queue element" DB_END;
+                                return;
+                        }
                 }else{
-                        DB_BEGIN "append to list" DB_END;
-                        // already contains elements
-                        *nl_last->next = *entry;
-                        DB_BEGIN "\tnl_last->next\t%u", (uint16_t) nl_last->next DB_END;  
+                        DB_BEGIN "WARNING: element already in list, dropped" DB_END;
+// TODO update value by mean filter
+                        entry->node_quality = 7;   
 
-                        *entry->prev = *nl_last;
-                        DB_BEGIN "\tentry->prev\t%u", (uint16_t) entry->prev DB_END;  
+
                 }
-                // set nl_last
-                nl_last = entry;
-
-                // just make sure...
-                nl_last->next = NULL;
-                nl_first->prev = NULL;
-
-                DB_BEGIN "after" DB_END;  
-
-                DB_BEGIN "\tnl_first->node_id\t%u", (uint16_t) nl_first->node_id DB_END;  
-                DB_BEGIN "\tnl_last->node_id\t%u", (uint16_t) nl_last->node_id DB_END;  
-                DB_BEGIN "\tentry->node_id\t\t%u", (uint16_t) entry->node_id DB_END;  
-
-//                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
-                DB_BEGIN "\tentry\t\t\t%u", (uint16_t) entry DB_END;  
-
-//                DB_BEGIN "\t&nl_first\t\t%u", (uint16_t) &nl_first DB_END;  
-                DB_BEGIN "\tnl_first\t\t%u", (uint16_t) nl_first DB_END;  
-
-//                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
-                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
-
-                DB_BEGIN "\tentry->next\t%u", (uint16_t) entry->next DB_END;  
-                DB_BEGIN "\tentry->prev\t%u", (uint16_t) entry->prev DB_END;  
-                DB_BEGIN "\tnl_last->next\t%u", (uint16_t) nl_last->next DB_END;  
-                DB_BEGIN "\tnl_last->prev\t%u", (uint16_t) nl_last->prev DB_END;  
-                DB_BEGIN "\tnl_first->next\t%u", (uint16_t) nl_first->next DB_END;  
-                DB_BEGIN "\tnl_first->prev\t%u", (uint16_t) nl_first->prev DB_END;  
-
-                nl_size++;
-//*/
-        }
-
-
-        void neighborlist_del( uint8_t node_id )
-        {
-                Neighborhood_p elem;
-                Neighborhood_p before;
-                Neighborhood_p after;
-                elem = neighborlist_find( node_id );
-                before = elem->prev;
-                after = elem->next;
-                before->next = after;
-                after->prev = before;
-                
-                // in case free element here
-        }
-
-        uint16_t neighborlist_size()
-        {
-                return nl_size;
         }
 
         void neighborlist_show()
         {
-                Neighborhood_p ptr = NULL;
-                uint16_t idx = 0;   
-                DB_BEGIN "neighborlist_show()" DB_END;  
-                DB_BEGIN "nl_size '%d'", nl_size DB_END;
-//*
-                if( !nl_first ) return;
-                // init
-                DB_BEGIN "INIT" DB_END;
-                ptr = nl_first;
+                Neighborhood_p elem = NULL;
+                uint16_t idx = 0;
+                uint8_t size = 0;
 
-                for(idx=0; idx<1+nl_size; ++idx){
-
-                DB_BEGIN "\tnode_id:\t%u", ptr->node_id DB_END;
-
-                if( NULL == ptr->next ){
-                        // stop
-                        DB_BEGIN "STOP" DB_END;
-                        DB_BEGIN "\tptr->next was NULL" DB_END;
-                        return;
-                }else{
-                        // iterate
-                        DB_BEGIN "ITERATE" DB_END;
-                        ptr = ptr->next;
+                size = (uint8_t) (call Neighborhood_list.size());
+                for( idx=0; idx<size; ++idx ){
+                        elem = (call Neighborhood_list.element( idx ));
+                        DB_BEGIN "node_id\t\t%u", elem->node_id DB_END;
+                        DB_BEGIN "node_quality\t%u", elem->node_quality DB_END;
                 }
-
-                }
-/*/
-                if( !nl_first ) return;
-                for( ptr = nl_first; ptr->next != NULL; ptr = ptr->next ){
-                        DB_BEGIN "\tnode_id:\t%u", ptr->node_id DB_END;
-//                        DB_BEGIN "\tnode_quality:\t%u", ptr->node_quality DB_END;
-                        DB_BEGIN " " DB_END;
-                }
-//*/
         }
 
 
@@ -314,15 +191,10 @@ implementation
 
         event void Boot.booted()
         {
-                nl_first = NULL;
-                nl_last = NULL;
-                nl_size = 0;
-
                 call AMControl.start();
                 call SerialAMControl.start();
                 call Notify.enable();
         }
-
 
         /*
           BUTTONS
@@ -390,23 +262,6 @@ implementation
                 // obtain payload
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
-/*
-                DB_BEGIN "received:" DB_END;
-                DB_BEGIN "src_node_id\t\t%u", io_payload->src_node_id DB_END;
-                DB_BEGIN "dst_node_id\t\t%u", io_payload->dst_node_id DB_END;
-                DB_BEGIN "sequence_number\t\t%u", io_payload->sequence_number DB_END;
-                DB_BEGIN "tos\t\t\t%u", io_payload->tos DB_END;
-                DB_BEGIN "timestamp_initial\t%u", io_payload->timestamp_initial DB_END;
-                DB_BEGIN " " DB_END;
-//*/
-
-/*
-                if( TOS_NODE_ID != io_payload->dst_node_id ){
-                        DB_BEGIN "TODO: not for me" DB_END;
-// TODO handle forward
-                        return NULL;
-                }
-//*/
 
                 if( TOS_NODE_ID == ((ProtoMsg_t*) payload)->src_node_id ){
                         // ERROR our node id
@@ -427,16 +282,10 @@ implementation
 
                         
                         item.node_id = ((ProtoMsg_t*) payload)->src_node_id;
-                        item.node_id++;   
-                        item.next = NULL;
-                        DB_BEGIN "XXX item.next\t%u", (uint16_t) item.next DB_END;   
-                        item.prev = NULL;
+                        item.node_quality = 0;   
                         neighborlist_add( &item );
+                        neighborlist_show();
                         
-                        neighborlist_show();  
-                        
-// TODO create neighbor node id list
-// TODO append node_id to neighbor node id list - snooping
                         call Timer_Resend.stop();
                         call Leds.led1Off();
 

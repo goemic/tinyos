@@ -45,8 +45,6 @@ typedef nx_struct SerialMsg{
 
 // Neighborhood table
 typedef struct Neighborhood_s{
-        struct Neighborhood_s* next;
-        struct Neighborhood_s* prev;
         uint8_t node_id;
         uint8_t node_quality;
         // TODO
