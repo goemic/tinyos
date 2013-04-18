@@ -114,6 +114,8 @@ implementation
         void neighborlist_show()
         {
                 Neighborhood_p ptr = nl_first;
+
+                DB_BEGIN "nl_size '%d'", nl_size DB_END;
                 for( ; ptr->node_id != nl_last->node_id; ptr = ptr->next){
                         DB_BEGIN "\tnode_id:\t%d", ptr->node_id DB_END;
                         DB_BEGIN "\tnode_quality:\t%d", ptr->node_quality DB_END;
