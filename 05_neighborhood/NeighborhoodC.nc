@@ -38,6 +38,10 @@ module NeighborhoodC
         // button
         uses interface Get<button_state_t>;
         uses interface Notify<button_state_t>;
+
+        // queue
+// TODO
+//        uses interface Queue<Neighborhood_t> as Neighbor_list;
 }
 implementation
 {
@@ -78,18 +82,64 @@ implementation
                 return NULL;
         }
 
-        void neighborlist_add( Neighborhood_p entry )
+        void neighborlist_add( Neighborhood_t *entry )
         {
+                DB_BEGIN "neighborlist_add()" DB_END;   
                 if( !entry ){
                         DB_BEGIN "ERROR: entry was NULL" DB_END;
                         return;
                 }
 
-                nl_last = entry;
-                nl_size++;
-                if( !nl_first ){
-                        nl_first = nl_last;
+                DB_BEGIN "before" DB_END;  
+/*
+                DB_BEGIN "\tnl_last->node_id\t%u", (uint16_t) nl_last->node_id DB_END;  
+                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
+                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
+                DB_BEGIN "\tentry->node_id\t\t%u", (uint16_t) entry->node_id DB_END;  
+                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
+                DB_BEGIN "\tentry\t\t\t%u", (uint16_t) entry DB_END;  
+//*/
+                DB_BEGIN "\tentry->next\t%u", (uint16_t) entry->next DB_END;  
+                DB_BEGIN "\tnl_last->next\t%u", (uint16_t) nl_last->next DB_END;  
+
+                DB_BEGIN "assignment" DB_END;
+//                if( !nl_last ){ // TODO check both
+                if( 0 == nl_size ){
+                        // list was empty
+                        *nl_first = *entry;
+                }else{
+                        // already contains elements
+                        nl_last->next = entry;
+                        DB_BEGIN "\tnl_last->next\t\t%u", (uint16_t) nl_last->next DB_END;  
+
+                        entry->prev = nl_last;
+                        DB_BEGIN "\tentry->prev\t\t%u", (uint16_t) entry->prev DB_END;  
                 }
+                // set nl_last
+                nl_last = entry;
+
+                // just make sure...
+                nl_last->next = NULL;
+                nl_first->prev = NULL;
+/*
+                DB_BEGIN "after" DB_END;  
+                DB_BEGIN "\tnl_last->node_id\t%u", (uint16_t) nl_last->node_id DB_END;  
+                DB_BEGIN "\t&nl_last\t\t%u", (uint16_t) &nl_last DB_END;  
+                DB_BEGIN "\tnl_last\t\t\t%u", (uint16_t) nl_last DB_END;  
+                DB_BEGIN "\tentry->node_id\t\t%u", (uint16_t) entry->node_id DB_END;  
+                DB_BEGIN "\t&entry\t\t\t%u", (uint16_t) &entry DB_END;  
+                DB_BEGIN "\tentry\t\t\t%u", (uint16_t) entry DB_END;  
+//*/
+                DB_BEGIN "\tentry->next\t%u", (uint16_t) entry->next DB_END;  
+                DB_BEGIN "\tentry->prev\t%u", (uint16_t) entry->prev DB_END;  
+
+                DB_BEGIN "\tnl_last->next\t%u", (uint16_t) nl_last->next DB_END;  
+                DB_BEGIN "\tnl_last->prev\t%u", (uint16_t) nl_last->prev DB_END;  
+
+                DB_BEGIN "\tnl_first->next\t%u", (uint16_t) nl_first->next DB_END;  
+                DB_BEGIN "\tnl_first->prev\t%u", (uint16_t) nl_first->prev DB_END;  
+
+                nl_size++;
         }
 
         void neighborlist_del( uint8_t node_id )
@@ -113,14 +163,40 @@ implementation
 
         void neighborlist_show()
         {
-                Neighborhood_p ptr = nl_first;
-
+                Neighborhood_p ptr = NULL;
+                uint16_t idx = 0;   
+                DB_BEGIN "neighborlist_show()" DB_END;  
                 DB_BEGIN "nl_size '%d'", nl_size DB_END;
-                for( ; ptr->node_id != nl_last->node_id; ptr = ptr->next){
-                        DB_BEGIN "\tnode_id:\t%d", ptr->node_id DB_END;
-                        DB_BEGIN "\tnode_quality:\t%d", ptr->node_quality DB_END;
+//*
+                if( !nl_first ) return;
+                // init
+                DB_BEGIN "INIT" DB_END;
+                ptr = nl_first;
+
+                for(idx=0; idx<1+nl_size; ++idx){
+
+                DB_BEGIN "\tnode_id:\t%u", ptr->node_id DB_END;
+
+                if( NULL == ptr->next ){
+                        // stop
+                        DB_BEGIN "STOP" DB_END;
+                        DB_BEGIN "\tptr->next was NULL" DB_END;
+                        return;
+                }else{
+                        // iterate
+                        DB_BEGIN "ITERATE" DB_END;
+                        ptr = ptr->next;
+                }
+
+                }
+/*/
+                if( !nl_first ) return;
+                for( ptr = nl_first; ptr->next != NULL; ptr = ptr->next ){
+                        DB_BEGIN "\tnode_id:\t%u", ptr->node_id DB_END;
+//                        DB_BEGIN "\tnode_quality:\t%u", ptr->node_quality DB_END;
                         DB_BEGIN " " DB_END;
                 }
+//*/
         }
 
 
@@ -139,7 +215,6 @@ implementation
         {
                 DB_BEGIN "APPLICATION_link_quality()" DB_END;  
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
-                neighborlist_show();
 /*
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
@@ -195,6 +270,10 @@ implementation
 
         event void Boot.booted()
         {
+                nl_first = NULL;
+                nl_last = NULL;
+                nl_size = 0;
+
                 call AMControl.start();
                 call SerialAMControl.start();
                 call Notify.enable();
@@ -304,7 +383,12 @@ implementation
 
                         
                         item.node_id = ((ProtoMsg_t*) payload)->src_node_id;
+                        item.next = NULL;
+                        DB_BEGIN "XXX item.next\t%u", (uint16_t) item.next DB_END;   
+                        item.prev = NULL;
                         neighborlist_add( &item );
+                        
+                        neighborlist_show();  
                         
 // TODO create neighbor node id list
 // TODO append node_id to neighbor node id list - snooping
@@ -320,8 +404,6 @@ implementation
                         number_of_resend = 0;
 
                         DB_BEGIN "\tconfirm with ACK\n" DB_END;
-                        
-                        // set payload to pkt
                         send_packet();
 
                         call Leds.led2Toggle();
@@ -347,11 +429,10 @@ implementation
         {
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
-                uint8_t dst_node_id = 2;
+                // explicitly send request to node 2
+                uint8_t dst_node_id = 2;           
 
                 if( is_busy ) return;
-
-
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
                 setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ );

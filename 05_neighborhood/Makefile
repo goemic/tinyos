@@ -29,4 +29,4 @@ CFLAGS += -DCC2420_DEF_RFPOWER=1
 CFLAGS += -I$(TOSDIR)/lib/printf
 
 # printf - change default buffer (only 250)
-#CFLAGS += -DPRINTF_BUFFER_SIZE=XXX
+CFLAGS += -DPRINTF_BUFFER_SIZE=2048
