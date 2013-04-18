@@ -115,9 +115,9 @@ implementation
         {
                 Neighborhood_p ptr = nl_first;
                 for( ; ptr->node_id != nl_last->node_id; ptr = ptr->next){
-                        DB_BEGIN "node_id:\t%d", ptr->node_id DB_END;
-                        DB_BEGIN "node_quality:\t%d", ptr->node_quality DB_END;
-                        DB_BEGIN " ", ptr->node_id DB_END;
+                        DB_BEGIN "\tnode_id:\t%d", ptr->node_id DB_END;
+                        DB_BEGIN "\tnode_quality:\t%d", ptr->node_quality DB_END;
+                        DB_BEGIN " " DB_END;
                 }
         }
 
@@ -125,6 +125,7 @@ implementation
         /*
           FUNCTIONS
         */
+
 //*
         // measure link quality to a specified node
         //
@@ -136,6 +137,7 @@ implementation
         {
                 DB_BEGIN "APPLICATION_link_quality()" DB_END;  
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
+                neighborlist_show();
 /*
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
@@ -150,9 +152,8 @@ implementation
                 // measure failures
 // TODO
         }
-//*/
 
-//*
+
         // setup packets
         void setup_payload( ProtoMsg_t* io_payload
                             , SerialMsg_t* serial_payload
@@ -205,7 +206,6 @@ implementation
         event void Notify.notify( button_state_t state )
         {
                 if( BUTTON_PRESSED == state ){
-                        DB_BEGIN "button pressed" DB_END;
                         call Leds.led1On();
                         APPLICATION_link_quality();
                 }

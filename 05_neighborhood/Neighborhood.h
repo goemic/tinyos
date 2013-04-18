@@ -69,5 +69,4 @@ typedef Neighborhood_t* Neighborhood_p;
   printf( "\n" );                               \
   printfflush();
 
-
 #endif
