@@ -246,9 +246,7 @@ implementation
                                 DB_BEGIN "resend %u", number_of_resend DB_END;
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }else{
-                                DB_BEGIN "dropped" DB_END;
-// TODO no measurement for not available nodes
-//                                rtt = 2*PERIOD_RESEND_TIMEOUT;
+                                DB_BEGIN "done" DB_END;
                         }
                 }
         }
@@ -258,9 +256,11 @@ implementation
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
                 Neighborhood_t item;
+                uint8_t node_id;
+
+                // check length
                 if( len != sizeof( ProtoMsg_t ) ){
                         DB_BEGIN "ERROR: received wrong packet length" DB_END;
-                        // ERROR somegthing's wrong with the length
                         return NULL;
                 }
 
@@ -268,12 +268,15 @@ implementation
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
 
-                if( TOS_NODE_ID == ((ProtoMsg_t*) payload)->src_node_id ){
-                        // ERROR our node id
-                        DB_BEGIN "ERROR: received own src_node_id" DB_END;
+
+                // dst id correct?
+                node_id = ((ProtoMsg_t*) payload)->dst_node_id;
+                if( (TOS_NODE_ID != node_id) && (255 != node_id) ){
+                        DB_BEGIN "WARNING: packet not for me, dropped" DB_END;
                         return NULL;
                 }
 
+                // type of service received?
                 if( TOS_ACK == ((ProtoMsg_t*) payload)->tos ){
                         // received ACK
                         DB_BEGIN "ACK received" DB_END;
@@ -284,7 +287,6 @@ implementation
                                 DB_BEGIN "ERROR: ACK with wrong sequence number received, dropped" DB_END;
                                 return NULL;
                         }
-
                         DB_BEGIN "\tsequence number ok" DB_END;
                         sequence_number = ((ProtoMsg_t*) payload)->sequence_number;
                         
@@ -331,7 +333,7 @@ implementation
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
                 // explicitly send request to node 2
-                uint8_t dst_node_id = 2;           
+                uint8_t dst_node_id = 255;           
 
                 if( is_busy ) return;
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
