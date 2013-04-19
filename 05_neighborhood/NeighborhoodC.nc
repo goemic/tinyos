@@ -81,9 +81,12 @@ implementation
 
         void neighborlist_add( Neighborhood_t *entry )
         {
-//                DB_BEGIN "maxsize %u", (uint8_t) (call Neighborhood_list.maxSize()) DB_END;
-                DB_BEGIN "neighborlist_add( Neighborhood_t *entry )" DB_END;
-                if( NULL == neighborlist_find( entry->node_id ) ){
+                Neighborhood_p ptr=NULL;
+                uint16_t rtt = 0;
+                uint16_t mean_rtt = 0;
+
+//                DB_BEGIN "neighborlist_add( Neighborhood_t *entry )" DB_END;
+                if( NULL == (ptr = neighborlist_find( entry->node_id )) ){
                         DB_BEGIN "\tnew neighbor found" DB_END;
 
                         // check size
@@ -99,10 +102,16 @@ implementation
                         }
                 }else{
                         DB_BEGIN "WARNING: element already in list, dropped" DB_END;
-// TODO update value by mean filter
-                        entry->node_quality = 7;   
-
-
+                        rtt = entry->node_quality;
+                        mean_rtt = ptr->node_quality;
+/*
+                        // take measurements directly
+                        ptr->node_quality = rtt;
+/*/
+                        // mean filter, to average measurements
+                        ptr->node_quality = mean_rtt + (10/5) * (rtt - mean_rtt) / 10;
+//*/
+                        rtt = 0;
                 }
         }
 
@@ -125,13 +134,7 @@ implementation
           FUNCTIONS
         */
 
-//*
-        // measure link quality to a specified node
-        //
-        // this means
-        // - send time
-        // - response time
-        // - send failure (resends) or unreachable (timeout)
+        // measure link quality to a specified node by button
         void APPLICATION_link_quality()
         {
                 DB_BEGIN "APPLICATION_link_quality()" DB_END;  
@@ -156,7 +159,8 @@ implementation
         void setup_payload( ProtoMsg_t* io_payload
                             , SerialMsg_t* serial_payload
                             , uint8_t dst_node_id
-                            , uint8_t tos )
+                            , uint8_t tos
+                            , uint16_t timestamp_initial )
 
         {
                 io_payload->src_node_id = TOS_NODE_ID;
@@ -171,7 +175,7 @@ implementation
                 io_payload->tos = tos;
                 serial_payload->tos = io_payload->tos;
 
-                io_payload->timestamp_initial = (call Timer_Request.getNow() );
+                io_payload->timestamp_initial = timestamp_initial;
                 serial_payload->timestamp_initial = io_payload->timestamp_initial;
         }
 
@@ -224,7 +228,6 @@ implementation
 
         event void AMControl.startDone( error_t err )
         {
-// TODO in case start timers here
                 if( SUCCESS != err ){
                         // restart services when failed
                         call AMControl.start();
@@ -244,6 +247,8 @@ implementation
                                 call Timer_Resend.startOneShot( PERIOD_RESEND_TIMEOUT );
                         }else{
                                 DB_BEGIN "dropped" DB_END;
+// TODO no measurement for not available nodes
+//                                rtt = 2*PERIOD_RESEND_TIMEOUT;
                         }
                 }
         }
@@ -273,16 +278,18 @@ implementation
                         // received ACK
                         DB_BEGIN "ACK received" DB_END;
                         number_of_resend = 0;
+
+                        // check sequence number, no handling for higher / different sequences implemented
                         if( (sequence_number+1) != ((ProtoMsg_t*) payload)->sequence_number ){
                                 DB_BEGIN "ERROR: ACK with wrong sequence number received, dropped" DB_END;
                                 return NULL;
                         }
+
                         DB_BEGIN "\tsequence number ok" DB_END;
                         sequence_number = ((ProtoMsg_t*) payload)->sequence_number;
-
                         
                         item.node_id = ((ProtoMsg_t*) payload)->src_node_id;
-                        item.node_quality = 0;   
+                        item.node_quality = (uint16_t) (call Timer_Request.getNow() ) - (uint16_t) ((ProtoMsg_t*) payload)->timestamp_initial;
                         neighborlist_add( &item );
                         neighborlist_show();
                         
@@ -294,7 +301,7 @@ implementation
                         DB_BEGIN "REQ received" DB_END;
                         sequence_number = ((ProtoMsg_t*) payload)->sequence_number;
                         dst_node_id = ((ProtoMsg_t*) payload)->src_node_id;
-                        setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK );
+                        setup_payload( io_payload, serial_payload, dst_node_id, TOS_ACK, ((ProtoMsg_t*) payload)->timestamp_initial );
                         number_of_resend = 0;
 
                         DB_BEGIN "\tconfirm with ACK\n" DB_END;
@@ -329,16 +336,13 @@ implementation
                 if( is_busy ) return;
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
-                setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ );
+                setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ, (call Timer_Request.getNow() ) );
                 number_of_resend = NUMBER_OF_RESEND;
                 send_packet();
         }
 
         event void Timer_Resend.fired()
         {
-// TODO store packet
-// TODO incase is_busy flag, waiting list for other packets, etc
-// TODO check and indicate 'dropped packets'
                 if( is_busy ){
                         // ERROR
                         DB_BEGIN "ERROR: busy sending a packet, while awaiting an ACK of another packet... o_O" DB_END;

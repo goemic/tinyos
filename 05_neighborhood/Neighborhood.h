@@ -13,6 +13,8 @@ enum{
         // timer
         PERIOD_REQUEST = 0,
         PERIOD_RESEND_TIMEOUT = 3000,
+        PERIOD_MEASURE_TIMEOUT = 5000,
+
         NUMBER_OF_RESEND = 3,
 
         // type of service
@@ -29,7 +31,7 @@ typedef nx_struct ProtoMsg{
         nx_uint8_t dst_node_id;
         nx_uint16_t sequence_number;
         nx_uint8_t tos;
-        nx_uint16_t timestamp_initial;  
+        nx_uint16_t timestamp_initial;
 } ProtoMsg_t;
 
 // serial message payload
@@ -41,13 +43,11 @@ typedef nx_struct SerialMsg{
         nx_uint16_t timestamp_initial;  
 } SerialMsg_t;
 
-
-
 // Neighborhood table
 typedef struct Neighborhood_s{
         uint8_t node_id;
         uint8_t node_quality;
-        // TODO
+// TODO
 } Neighborhood_t;
 typedef Neighborhood_t* Neighborhood_p;
 
