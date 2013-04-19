@@ -1,7 +1,7 @@
 /**
  * NeighborhoodC.nc
  *
- * TODO
+ * several issues - finally only tested with two nodes
  *
  * @author: Lothar Rubusch
  **/
