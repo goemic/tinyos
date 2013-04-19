@@ -62,6 +62,9 @@ implementation
         // sequence_number
         uint16_t sequence_number = 0;
 
+        // number of measurings
+        uint16_t total_measurings = 0;
+
         /*
           LIST
          */
@@ -85,15 +88,12 @@ implementation
         void neighborlist_add( uint8_t node_id, uint8_t node_quality )
         {
                 uint8_t idx;
-                uint16_t rtt = 0;
-                uint16_t mean_rtt = 0;
 
                 // already in list
                 if( ARRAYTABLE_SIZE != (idx = neighborlist_find( node_id )) ){
-                        mean_rtt = node_qualities[idx];
-                        rtt = node_quality;
                         // mean filter over new measurment
-                        node_qualities[idx] = mean_rtt + (10/5) * (rtt - mean_rtt) / 10;
+                        DB_BEGIN "number_of_requests %u", number_of_requests DB_END;
+                        node_qualities[idx] = node_quality;
                         return;
                 }
 
@@ -113,7 +113,6 @@ implementation
 
         void neighborlist_show()
         {
-                Neighborhood_p elem = NULL;
                 uint16_t idx;
 
                 for( idx=0; idx<ARRAYTABLE_SIZE; ++idx ){
@@ -143,8 +142,8 @@ implementation
         void neighborlist_add( Neighborhood_t *entry )
         {
                 Neighborhood_p ptr=NULL;
-                uint16_t rtt = 0;
-                uint16_t mean_rtt = 0;
+                int16_t rtt = 0;
+                int16_t mean_rtt = 0;
 
                 if( NULL == (ptr = neighborlist_find( entry->node_id )) ){
                         DB_BEGIN "\tnew neighbor found" DB_END;
@@ -156,6 +155,7 @@ implementation
                         }
 
                         // append
+                        entry->node_quality = 100 * entry->node_quality; // adaptation
                         if( SUCCESS != (call Neighborhood_list.enqueue(entry))){
                                 DB_BEGIN "ERROR: could not queue element" DB_END;
                                 return;
@@ -170,7 +170,9 @@ implementation
                         ptr->node_quality = rtt;
 /*/
                         // mean filter, to average measurements
-                        ptr->node_quality = mean_rtt + (10/5) * (rtt - mean_rtt) / 10;
+                        total_measurings++;
+//                        ptr->node_quality = mean_rtt + (10/5) * (rtt - mean_rtt) / 10;
+                        ptr->node_quality = mean_rtt + (100/total_measurings) * (rtt - mean_rtt) / 100;
 //*/
                         rtt = 0;
                 }
