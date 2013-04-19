@@ -11,9 +11,8 @@ enum{
         AM_SERIAL = 22,
 
         // timer
-        PERIOD_REQUEST = 0,
-        PERIOD_RESEND_TIMEOUT = 3000,
-        PERIOD_MEASURE_TIMEOUT = 5000,
+        PERIOD_REQUEST = 5000,
+        PERIOD_RESEND_TIMEOUT = 300,
 
         NUMBER_OF_RESEND = 3,
 
@@ -50,6 +49,10 @@ typedef struct Neighborhood_s{
 // TODO
 } Neighborhood_t;
 typedef Neighborhood_t* Neighborhood_p;
+
+// list or array
+#define ARRAYTABLE 1
+#define ARRAYTABLE_SIZE 5
 
 
 // DEBUGGING

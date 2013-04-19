@@ -53,6 +53,9 @@ implementation
         // serial packet
         message_t serial_pkt;
 
+        // number of request
+        uint8_t number_of_requests = 0;
+
         // resend
         uint8_t number_of_resend = 0;
 
@@ -62,8 +65,66 @@ implementation
         /*
           LIST
          */
+#ifdef ARRAYTABLE
+        // alternative: use of array, since list only can hold 2 elements (!?!)
+        uint8_t node_ids[5];
+        uint16_t node_qualities[5];
 
-        Neighborhood_p neighborlist_find( uint8_t node_id )
+        // in case of fail returns ARRAYTABLE_SIZE
+        uint8_t neighborlist_find( uint8_t node_id )
+        {
+                uint8_t idx;
+
+                for( idx=0; idx<ARRAYTABLE_SIZE; ++idx ){
+                        node_ids[idx] = node_id;
+                        return idx;
+                }
+                return idx;
+        }
+
+        void neighborlist_add( uint8_t node_id, uint8_t node_quality )
+        {
+                uint8_t idx;
+                uint16_t rtt = 0;
+                uint16_t mean_rtt = 0;
+
+                // already in list
+                if( ARRAYTABLE_SIZE != (idx = neighborlist_find( node_id )) ){
+                        mean_rtt = node_qualities[idx];
+                        rtt = node_quality;
+                        // mean filter over new measurment
+                        node_qualities[idx] = mean_rtt + (10/5) * (rtt - mean_rtt) / 10;
+                        return;
+                }
+
+                // where to insert
+                for( idx=0; idx < ARRAYTABLE_SIZE; ++idx ){
+                        if( 0 == node_ids[idx] ){
+                                node_ids[idx] = node_id;
+                                node_qualities[idx] = node_quality;
+                        }
+                }
+
+                // too many
+                if( idx == ARRAYTABLE_SIZE ){
+                        DB_BEGIN "ERROR: too many entries, dropped" DB_END;
+                }
+        }
+
+        void neighborlist_show()
+        {
+                Neighborhood_p elem = NULL;
+                uint16_t idx;
+
+                for( idx=0; idx<ARRAYTABLE_SIZE; ++idx ){
+                        if( 0 == node_ids[idx] ) return;
+                        DB_BEGIN "node_id\t\t%u", node_ids[idx] DB_END;
+                        DB_BEGIN "node_quality\t%u", node_qualities[idx] DB_END;
+                }
+        }
+#else
+// use list implementation, but only 2 elements per list possible(!?)
+       Neighborhood_p neighborlist_find( uint8_t node_id )
         {
                 uint8_t idx = 0;
                 Neighborhood_p elem = NULL;
@@ -85,7 +146,6 @@ implementation
                 uint16_t rtt = 0;
                 uint16_t mean_rtt = 0;
 
-//                DB_BEGIN "neighborlist_add( Neighborhood_t *entry )" DB_END;
                 if( NULL == (ptr = neighborlist_find( entry->node_id )) ){
                         DB_BEGIN "\tnew neighbor found" DB_END;
 
@@ -104,6 +164,7 @@ implementation
                         DB_BEGIN "WARNING: element already in list, dropped" DB_END;
                         rtt = entry->node_quality;
                         mean_rtt = ptr->node_quality;
+
 /*
                         // take measurements directly
                         ptr->node_quality = rtt;
@@ -128,7 +189,7 @@ implementation
                         DB_BEGIN "node_quality\t%u", elem->node_quality DB_END;
                 }
         }
-
+#endif
 
         /*
           FUNCTIONS
@@ -138,20 +199,12 @@ implementation
         void APPLICATION_link_quality()
         {
                 DB_BEGIN "APPLICATION_link_quality()" DB_END;  
-                call Timer_Request.startOneShot( PERIOD_REQUEST );
 /*
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
-                call Timer_Request.startOneShot( PERIOD_REQUEST );
-                call Timer_Request.startOneShot( PERIOD_REQUEST );
-                call Timer_Request.startOneShot( PERIOD_REQUEST );
+/*/
+                number_of_requests = 5;
+                call Timer_Request.startPeriodic( PERIOD_REQUEST );
 //*/
-                // send like three pings
-                // TODO
-                // measure send time
-                // measure return time
-                // measure resends
-                // measure failures
-// TODO
         }
 
 
@@ -195,6 +248,13 @@ implementation
 
         event void Boot.booted()
         {
+                uint8_t idx;
+#ifdef ARRAYTABLE
+                for( idx=0; idx < ARRAYTABLE_SIZE; ++idx ){
+                        node_ids[idx] = 0;
+                        node_qualities[idx] = 0;
+                }
+#endif
                 call AMControl.start();
                 call SerialAMControl.start();
                 call Notify.enable();
@@ -255,8 +315,10 @@ implementation
                 uint8_t dst_node_id;
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
-                Neighborhood_t item;
                 uint8_t node_id;
+#ifndef ARRAYTABLE
+                Neighborhood_t item;
+#endif
 
                 // check length
                 if( len != sizeof( ProtoMsg_t ) ){
@@ -289,12 +351,17 @@ implementation
                         }
                         DB_BEGIN "\tsequence number ok" DB_END;
                         sequence_number = ((ProtoMsg_t*) payload)->sequence_number;
-                        
+#ifdef ARRAYTABLE
+                        neighborlist_add( ((ProtoMsg_t*) payload)->src_node_id
+                                          , (uint16_t) (call Timer_Request.getNow() ) - (uint16_t) ((ProtoMsg_t*) payload)->timestamp_initial );
+                        neighborlist_show();
+#else
                         item.node_id = ((ProtoMsg_t*) payload)->src_node_id;
                         item.node_quality = (uint16_t) (call Timer_Request.getNow() ) - (uint16_t) ((ProtoMsg_t*) payload)->timestamp_initial;
                         neighborlist_add( &item );
                         neighborlist_show();
-                        
+#endif
+
                         call Timer_Resend.stop();
                         call Leds.led1Off();
 
@@ -333,9 +400,13 @@ implementation
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
                 // explicitly send request to node 2
-                uint8_t dst_node_id = 255;           
+                uint8_t dst_node_id = 255; // broadcast
 
                 if( is_busy ) return;
+                number_of_requests--;
+                if( 0 == number_of_requests ){
+                        call Timer_Request.stop();
+                }
                 io_payload = (ProtoMsg_t*) (call Packet.getPayload( &pkt, sizeof( ProtoMsg_t )));
                 serial_payload = (SerialMsg_t*) (call Packet.getPayload( &serial_pkt, sizeof( SerialMsg_t )));
                 setup_payload( io_payload, serial_payload, dst_node_id, TOS_REQ, (call Timer_Request.getNow() ) );

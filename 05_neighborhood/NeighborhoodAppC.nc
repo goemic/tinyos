@@ -53,6 +53,14 @@ implementation
         components new QueueC( Neighborhood_t*, sizeof( Neighborhood_t* ) );
         App.Neighborhood_list -> QueueC;
 
+        // signal strength
+// TODO
+//        components CC2420ActiveMessageC;
+//        App.CC2420Packet -> CC2420ActiveMessageC.CC2420Packet;
+
+        // battery power
+// TODO send remaining battery power with ACK
+
         // debugging
         components PrintfC;
         components SerialStartC;
