@@ -402,7 +402,11 @@ implementation
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
                 // explicitly send request to node 2
+/*
                 uint8_t dst_node_id = 255; // broadcast
+/*/
+                uint8_t dst_node_id = 2;   // unicast
+//*/
 
                 if( is_busy ) return;
                 number_of_requests--;
