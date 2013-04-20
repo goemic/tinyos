@@ -63,7 +63,7 @@ implementation
         uint16_t sequence_number = 0;
 
         // number of measurings
-        uint16_t total_measurings = 0;
+//        uint16_t total_measurings = 0;
 
         /*
           LIST
@@ -101,7 +101,7 @@ implementation
                 for( idx=0; idx < ARRAYTABLE_SIZE; ++idx ){
                         if( 0 == node_ids[idx] ){
                                 node_ids[idx] = node_id;
-                                node_qualities[idx] = node_quality;
+                                node_qualities[idx] = 10 * (node_qualities[idx] + node_quality) / 20 ;
                         }
                 }
 
@@ -170,9 +170,9 @@ implementation
                         ptr->node_quality = rtt;
 /*/
                         // mean filter, to average measurements
-                        total_measurings++;
+//                        total_measurings++;
 //                        ptr->node_quality = mean_rtt + (10/5) * (rtt - mean_rtt) / 10;
-                        ptr->node_quality = mean_rtt + (100/total_measurings) * (rtt - mean_rtt) / 100;
+                        ptr->node_quality = 10 * (mean_rtt + rtt) / 20;
 //*/
                         rtt = 0;
                 }
