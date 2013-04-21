@@ -4,6 +4,8 @@
  * several issues - finally only tested with two nodes
  *
  * @author: Lothar Rubusch
+ * @email: L.Rubusch@gmx.ch
+ * @license: GPL v.3
  **/
 #include "Neighborhood.h"
 
@@ -422,7 +424,6 @@ implementation
         event void Timer_Resend.fired()
         {
                 if( is_busy ){
-                        // ERROR
                         DB_BEGIN "ERROR: busy sending a packet, while awaiting an ACK of another packet... o_O" DB_END;
                         return;
                 }

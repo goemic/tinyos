@@ -4,6 +4,8 @@
  * wiring app file
  *
  * @author: Lothar Rubusch
+ * @email: L.Rubusch@gmx.ch
+ * @license: GPL v.3
  **/
 #include "Neighborhood.h"
 
