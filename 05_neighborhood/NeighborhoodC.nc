@@ -4,6 +4,8 @@
  * several issues - finally only tested with two nodes
  *
  * @author: Lothar Rubusch
+ * @email: L.Rubusch@gmx.ch
+ * @license: GPL v.3
  **/
 #include "Neighborhood.h"
 
@@ -88,6 +90,8 @@ implementation
         void neighborlist_add( uint8_t node_id, uint8_t node_quality )
         {
                 uint8_t idx;
+                uint16_t rtt = 0;
+                uint16_t mean_rtt = 0;
 
                 // already in list
                 if( ARRAYTABLE_SIZE != (idx = neighborlist_find( node_id )) ){
@@ -101,7 +105,10 @@ implementation
                 for( idx=0; idx < ARRAYTABLE_SIZE; ++idx ){
                         if( 0 == node_ids[idx] ){
                                 node_ids[idx] = node_id;
-                                node_qualities[idx] = 10 * (node_qualities[idx] + node_quality) / 20 ;
+                                rtt = node_quality;
+                                mean_rtt = node_qualities[idx];
+                                node_qualities[idx] = (100 * mean_rtt + 100 * rtt) / (2 * 100);
+
                         }
                 }
 
@@ -165,15 +172,9 @@ implementation
                         rtt = entry->node_quality;
                         mean_rtt = ptr->node_quality;
 
-/*
-                        // take measurements directly
-                        ptr->node_quality = rtt;
-/*/
                         // mean filter, to average measurements
-//                        total_measurings++;
-//                        ptr->node_quality = mean_rtt + (10/5) * (rtt - mean_rtt) / 10;
-                        ptr->node_quality = 10 * (mean_rtt + rtt) / 20;
-//*/
+                        total_measurings++;
+                        ptr->node_quality = (100 * mean_rtt + 100 * rtt) / (2 * 100);
                         rtt = 0;
                 }
         }
@@ -200,7 +201,7 @@ implementation
         // measure link quality to a specified node by button
         void APPLICATION_link_quality()
         {
-                DB_BEGIN "APPLICATION_link_quality()" DB_END;  
+                DB_BEGIN "APPLICATION_link_quality()" DB_END;
 /*
                 call Timer_Request.startOneShot( PERIOD_REQUEST );
 /*/
@@ -402,7 +403,7 @@ implementation
                 ProtoMsg_t* io_payload = NULL;
                 SerialMsg_t* serial_payload = NULL;
                 // explicitly send request to node 2
-/*
+//*
                 uint8_t dst_node_id = 255; // broadcast
 /*/
                 uint8_t dst_node_id = 2;   // unicast
@@ -423,12 +424,11 @@ implementation
         event void Timer_Resend.fired()
         {
                 if( is_busy ){
-                        // ERROR
                         DB_BEGIN "ERROR: busy sending a packet, while awaiting an ACK of another packet... o_O" DB_END;
                         return;
                 }
                 DB_BEGIN "resending packet" DB_END;
                 number_of_resend--;
-                send_packet(); // TODO test
+                send_packet();
         }
 }

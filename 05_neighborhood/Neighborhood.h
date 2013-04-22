@@ -1,6 +1,8 @@
 /**
  *
  * @author: Lothar Rubusch
+ * @email: L.Rubusch@gmx.ch
+ * @license: GPL v.3
  **/
 
 #ifndef NEIGHBORHOOD_H_

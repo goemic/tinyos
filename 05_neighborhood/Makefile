@@ -1,4 +1,7 @@
 ## Makefile - ASSIGNMENT05
+## @author: Lothar Rubusch
+## @email: L.Rubusch@gmx.ch
+## @license: GPL v.3
 ##
 ## 1) TODO
 ## $ make telosb
